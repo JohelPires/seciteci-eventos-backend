@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id              Int       @id @default(autoincrement())
+  nome            String    @db.VarChar(100)
+  email           String    @unique @db.VarChar(100)
+  senha           String    @db.VarChar(255)
+  telefone        String?   @db.VarChar(20)
+  cpf             String?   @unique @db.VarChar(14)
+  dataNascimento  DateTime? @map("data_nascimento") @db.Date
+  fotoPerfil      String?   @map("foto_perfil") @db.VarChar(255)
+  tipoUsuario     String    @default("participante") @map("tipo_usuario") @db.VarChar(20)
+  dataCadastro    DateTime  @default(now()) @map("data_cadastro") @db.Timestamp(6)
+  ultimoAcesso    DateTime? @map("ultimo_acesso") @db.Timestamp(6)
+  ativo           Boolean   @default(true)
+
+  eventosOrganizados Evento[]
+  inscricoes         Inscricao[]
+  avaliacoes         Avaliacao[]
+  notificacoes       Notificacao[]
+
+  @@map("usuarios")
+}
+
+model Categoria {
+  id        Int      @id @default(autoincrement())
+  nome      String   @unique @db.VarChar(50)
+  descricao String?  @db.Text
+  icone     String?  @db.VarChar(50)
+  ativo     Boolean  @default(true)
+
+  eventos Evento[]
+
+  @@map("categorias")
+}
+
+model Local {
+  id          Int      @id @default(autoincrement())
+  nome        String   @db.VarChar(100)
+  endereco    String   @db.VarChar(200)
+  numero      String?  @db.VarChar(10)
+  complemento String?  @db.VarChar(50)
+  bairro      String?  @db.VarChar(50)
+  cidade      String   @db.VarChar(50)
+  estado      String   @db.Char(2)
+  cep         String?  @db.VarChar(9)
+  pais        String   @default("Brasil") @db.VarChar(50)
+  capacidade  Int?
+  latitude    Decimal? @db.Decimal(10, 8)
+  longitude   Decimal? @db.Decimal(11, 8)
+  observacoes String?  @db.Text
+
+  eventos Evento[]
+
+  @@map("locais")
+}
+
+model Evento {
+  id                   Int       @id @default(autoincrement())
+  titulo               String    @db.VarChar(150)
+  descricao            String?   @db.Text
+  categoriaId          Int?      @map("categoria_id")
+  localId              Int?      @map("local_id")
+  organizadorId        Int       @map("organizador_id")
+  dataInicio           DateTime  @map("data_inicio") @db.Timestamp(6)
+  dataFim              DateTime  @map("data_fim") @db.Timestamp(6)
+  horarioAbertura      DateTime? @map("horario_abertura") @db.Time(6)
+  horarioEncerramento  DateTime? @map("horario_encerramento") @db.Time(6)
+  capacidadeMaxima     Int?      @map("capacidade_maxima")
+  vagasDisponiveis     Int?      @map("vagas_disponiveis")
+  valorInscricao       Decimal   @default(0.00) @map("valor_inscricao") @db.Decimal(10, 2)
+  tipoEvento           String    @default("presencial") @map("tipo_evento") @db.VarChar(20)
+  linkOnline           String?   @map("link_online") @db.VarChar(255)
+  imagemCapa           String?   @map("imagem_capa") @db.VarChar(255)
+  status               String    @default("rascunho") @db.VarChar(20)
+  publicoAlvo          String?   @map("publico_alvo") @db.Text
+  requisitos           String?   @db.Text
+  dataCriacao          DateTime  @default(now()) @map("data_criacao") @db.Timestamp(6)
+  dataAtualizacao      DateTime  @updatedAt @map("data_atualizacao") @db.Timestamp(6)
+  destaque             Boolean   @default(false)
+
+  categoria    Categoria?    @relation(fields: [categoriaId], references: [id])
+  local        Local?        @relation(fields: [localId], references: [id])
+  organizador  Usuario       @relation(fields: [organizadorId], references: [id])
+  inscricoes   Inscricao[]
+  programacao  Programacao[]
+  avaliacoes   Avaliacao[]
+  notificacoes Notificacao[]
+
+  @@map("eventos")
+}
+
+model Inscricao {
+  id              Int       @id @default(autoincrement())
+  eventoId        Int       @map("evento_id")
+  usuarioId       Int       @map("usuario_id")
+  dataInscricao   DateTime  @default(now()) @map("data_inscricao") @db.Timestamp(6)
+  statusInscricao String    @default("pendente") @map("status_inscricao") @db.VarChar(20)
+  statusPagamento String    @default("pendente") @map("status_pagamento") @db.VarChar(20)
+  valorPago       Decimal?  @map("valor_pago") @db.Decimal(10, 2)
+  codigoInscricao String    @unique @map("codigo_inscricao") @db.VarChar(20)
+  dataPagamento   DateTime? @map("data_pagamento") @db.Timestamp(6)
+  presente        Boolean   @default(false)
+  dataPresenca    DateTime? @map("data_presenca") @db.Timestamp(6)
+  observacoes     String?   @db.Text
+
+  evento       Evento       @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  usuario      Usuario      @relation(fields: [usuarioId], references: [id])
+  certificado  Certificado?
+
+  @@unique([eventoId, usuarioId])
+  @@map("inscricoes")
+}
+
+model Palestrante {
+  id            Int      @id @default(autoincrement())
+  nome          String   @db.VarChar(100)
+  email         String?  @db.VarChar(100)
+  telefone      String?  @db.VarChar(20)
+  biografia     String?  @db.Text
+  foto          String?  @db.VarChar(255)
+  linkedin      String?  @db.VarChar(255)
+  twitter       String?  @db.VarChar(100)
+  website       String?  @db.VarChar(255)
+  especialidade String?  @db.VarChar(100)
+
+  programacao Programacao[]
+
+  @@map("palestrantes")
+}
+
+model Programacao {
+  id             Int      @id @default(autoincrement())
+  eventoId       Int      @map("evento_id")
+  titulo         String   @db.VarChar(150)
+  descricao      String?  @db.Text
+  palestranteId  Int?     @map("palestrante_id")
+  dataAtividade  DateTime @map("data_atividade") @db.Date
+  horarioInicio  DateTime @map("horario_inicio") @db.Time(6)
+  horarioFim     DateTime @map("horario_fim") @db.Time(6)
+  localAtividade String?  @map("local_atividade") @db.VarChar(100)
+  tipoAtividade  String   @default("palestra") @map("tipo_atividade") @db.VarChar(20)
+  capacidade     Int?
+
+  evento      Evento       @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  palestrante Palestrante? @relation(fields: [palestranteId], references: [id])
+
+  @@map("programacao")
+}
+
+model Avaliacao {
+  id            Int      @id @default(autoincrement())
+  eventoId      Int      @map("evento_id")
+  usuarioId     Int      @map("usuario_id")
+  nota          Int
+  comentario    String?  @db.Text
+  dataAvaliacao DateTime @default(now()) @map("data_avaliacao") @db.Timestamp(6)
+
+  evento  Evento  @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@unique([eventoId, usuarioId])
+  @@map("avaliacoes")
+}
+
+model Certificado {
+  id                  Int      @id @default(autoincrement())
+  inscricaoId         Int      @unique @map("inscricao_id")
+  codigoValidacao     String   @unique @map("codigo_validacao") @db.VarChar(50)
+  cargaHoraria        Int?     @map("carga_horaria")
+  dataEmissao         DateTime @default(now()) @map("data_emissao") @db.Timestamp(6)
+  templateCertificado String?  @map("template_certificado") @db.VarChar(255)
+  arquivoPdf          String?  @map("arquivo_pdf") @db.VarChar(255)
+
+  inscricao Inscricao @relation(fields: [inscricaoId], references: [id], onDelete: Cascade)
+
+  @@map("certificados")
+}
+
+model Notificacao {
+  id        Int      @id @default(autoincrement())
+  usuarioId Int      @map("usuario_id")
+  eventoId  Int?     @map("evento_id")
+  titulo    String   @db.VarChar(100)
+  mensagem  String   @db.Text
+  tipo      String   @default("info") @db.VarChar(20)
+  lida      Boolean  @default(false)
+  dataEnvio DateTime @default(now()) @map("data_envio") @db.Timestamp(6)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  evento  Evento? @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+
+  @@map("notificacoes")
+}
