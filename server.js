@@ -102,10 +102,15 @@ process.on('SIGINT', async () => {
    process.exit(0)
 })
 
-process.on('SIGTERM', async () => {
-   console.log('\n🔴 Encerrando servidor (SIGTERM)...')
-   await prisma.$disconnect()
-   process.exit(0)
+// process.on('SIGTERM', async () => {
+//    console.log('\n🔴 Encerrando servidor (SIGTERM)...')
+//    await prisma.$disconnect()
+//    process.exit(0)
+// })
+
+process.on('SIGTERM', () => {
+   console.log('⏳ SIGTERM recebido, aguardando 30 segundos...')
+   setTimeout(() => process.exit(0), 30000)
 })
 
 // Iniciar servidor
