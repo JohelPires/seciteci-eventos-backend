@@ -262,9 +262,6 @@
  *               capacidadeMaxima:
  *                 type: integer
  *                 example: 50
- *               valorInscricao:
- *                 type: number
- *                 example: 100.00
  *               tipoEvento:
  *                 type: string
  *                 enum: [presencial, online, hibrido]
@@ -320,8 +317,6 @@
  *               status:
  *                 type: string
  *                 enum: [rascunho, publicado, cancelado, encerrado]
- *               valorInscricao:
- *                 type: number
  *     responses:
  *       200:
  *         description: Evento atualizado
