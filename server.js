@@ -102,12 +102,12 @@ app.use((err, req, res, next) => {
 })
 
 // Graceful shutdown
-// process.on('SIGINT', async () => {
-//    console.log('\n🔴 Encerrando servidor...')
-//    await prisma.$disconnect()
-//    console.log('✅ Conexão com banco encerrada')
-//    process.exit(0)
-// })
+process.on('SIGINT', async () => {
+   console.log('\n🔴 Encerrando servidor...')
+   await prisma.$disconnect()
+   console.log('✅ Conexão com banco encerrada')
+   process.exit(0)
+})
 
 // process.on('SIGTERM', async () => {
 //    console.log('\n🔴 Encerrando servidor (SIGTERM)...')
