@@ -10,6 +10,8 @@ const prisma = require('./config/prisma')
 const app = express()
 const PORT = process.env.PORT || 3000
 
+app.set('trust proxy', 1)
+
 // Rate limiting
 const limiter = rateLimit({
    windowMs: 15 * 60 * 1000, // 15 minutos
