@@ -9,6 +9,10 @@ const prisma = require('./config/prisma')
 
 const app = express()
 const PORT = process.env.PORT || 3000
+const URL =
+   process.env.NODE_ENV === 'development'
+      ? `http://localhost:${PORT}`
+      : 'https://seciteci-seciteci-eventos.qmono1.easypanel.host'
 
 app.set('trust proxy', 1)
 
@@ -69,14 +73,15 @@ app.get('/', (req, res) => {
    res.json({
       message: 'API Sistema de Eventos',
       version: '1.0.0',
+      swagger: `${URL}/api-docs`,
       endpoints: {
-         auth: '/api/auth/register, /api/auth/login',
-         eventos: '/api/eventos',
-         inscricoes: '/api/inscricoes',
-         categorias: '/api/categorias',
-         locais: '/api/locais',
-         avaliacoes: '/api/avaliacoes',
-         notificacoes: '/api/notificacoes',
+         auth: `${URL}/api/auth/register, ${URL}/api/auth/login`,
+         eventos: `${URL}/api/eventos`,
+         inscricoes: `${URL}/api/inscricoes`,
+         categorias: `${URL}/api/categorias`,
+         locais: `${URL}/api/locais`,
+         avaliacoes: `${URL}/api/avaliacoes`,
+         notificacoes: `${URL}/api/notificacoes`,
       },
       docs: 'Para documentação completa, consulte o README',
    })
@@ -112,23 +117,23 @@ process.on('SIGTERM', async () => {
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', async () => {
-   console.log('\n====================================')
-   console.log(' API Sistema de Eventos')
-   console.log('====================================')
-   console.log(`URL:      http://localhost:${PORT}`)
-   console.log(`Swagger:  http://localhost:${PORT}/api-docs`)
-   console.log('Database: PostgreSQL + Prisma')
-   console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`)
-   console.log('====================================\n')
-
    // Testar conexão com banco
+   let conectado = false
    try {
       await prisma.$connect()
-      console.log('✅ Conectado ao banco de dados!')
+      conectado = true
    } catch (error) {
       console.error('❌ Erro ao conectar no banco:', error.message)
       console.error('💡 Verifique a DATABASE_URL no .env')
    }
+   console.log('\n====================================')
+   console.log(' API Sistema de Eventos - Seciteci')
+   console.log('====================================')
+   console.log(`URL:      ${URL}`)
+   console.log(`Swagger:  ${URL}/api-docs`)
+   console.log(`Database: ${conectado ? '✅ Conectado' : '❌ Desconectado'}`)
+   console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`)
+   console.log('====================================\n')
 })
 
 module.exports = app

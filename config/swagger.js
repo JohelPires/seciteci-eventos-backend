@@ -6,10 +6,10 @@ const options = {
       info: {
          title: 'API Sistema de Eventos',
          version: '1.0.0',
-         description: 'API REST completa para gerenciamento de eventos com Node.js, Express, PostgreSQL e Prisma ORM',
+         description: 'API Sistema de Eventos da Seciteci',
          contact: {
             name: 'Suporte',
-            email: 'suporte@eventos.com',
+            email: '',
          },
       },
       servers: [
@@ -18,11 +18,11 @@ const options = {
             description: 'Servidor de Desenvolvimento',
          },
          {
-            url: 'https://api.eventos.com',
+            url: 'https://seciteci-seciteci-eventos.qmono1.easypanel.host',
             description: 'Servidor de Produção',
          },
       ],
-      // ===== ADICIONE ESTA SEÇÃO =====
+
       components: {
          securitySchemes: {
             bearerAuth: {
@@ -38,7 +38,6 @@ const options = {
             bearerAuth: [],
          },
       ],
-      // ===============================
    },
    apis: ['./docs/*.js'],
 }
