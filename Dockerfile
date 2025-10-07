@@ -64,11 +64,11 @@ RUN chown -R nodejs:nodejs /app
 USER nodejs
 
 # Expor porta
-EXPOSE 3000
+EXPOSE 80
 
 # Variáveis de ambiente padrão
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=80
 
 # Comando de inicialização
 CMD ["node", "server.js"]
