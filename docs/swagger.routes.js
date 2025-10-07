@@ -1,5 +1,5 @@
 /**
- * DOCUMENTAÇÃO SWAGGER - API SISTEMA DE EVENTOS
+ * DOCUMENTAÇÃO SWAGGER - API SISTEMA DE EVENTOS - SECITECI
  *
  * Este arquivo contém toda a documentação OpenAPI 3.0 da API
  * Organizado por módulos: Autenticação, Eventos, Inscrições, etc.
@@ -154,7 +154,7 @@
  *         schema:
  *           type: string
  *         description: Filtrar por cidade
- *         example: São Paulo
+ *         example: Cuiabá
  *       - in: query
  *         name: status
  *         schema:
@@ -620,10 +620,10 @@
  *                 type: string
  *               cidade:
  *                 type: string
- *                 example: São Paulo
+ *                 example: Cuiabá
  *               estado:
  *                 type: string
- *                 example: SP
+ *                 example: MT
  *               cep:
  *                 type: string
  *               capacidade:

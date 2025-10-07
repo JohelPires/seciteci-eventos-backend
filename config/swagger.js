@@ -4,7 +4,7 @@ const options = {
    definition: {
       openapi: '3.0.0',
       info: {
-         title: 'API Sistema de Eventos',
+         title: 'API Sistema de Eventos da Seciteci',
          version: '1.0.0',
          description: 'API Sistema de Eventos da Seciteci',
          contact: {
