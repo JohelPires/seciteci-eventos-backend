@@ -14,12 +14,12 @@ const options = {
       },
       servers: [
          {
-            url: 'http://localhost:3000',
-            description: 'Servidor de Desenvolvimento',
-         },
-         {
             url: 'https://seciteci-seciteci-eventos.qmono1.easypanel.host',
             description: 'Servidor de Produção',
+         },
+         {
+            url: 'http://localhost:3000',
+            description: 'Servidor de Desenvolvimento',
          },
       ],
 
