@@ -34,6 +34,7 @@ model Categoria {
   nome      String   @unique @db.VarChar(50)
   descricao String?  @db.Text
   icone     String?  @db.VarChar(50)
+  cor       String?  @db.VarChar(50)
   ativo     Boolean  @default(true)
 
   eventos Evento[]

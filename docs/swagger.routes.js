@@ -542,6 +542,9 @@
  *                 type: string
  *               icone:
  *                 type: string
+ *               cor:
+ *                 type: string
+ *                 example: #ff0000
  *     responses:
  *       201:
  *         description: Categoria criada
