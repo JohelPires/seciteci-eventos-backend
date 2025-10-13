@@ -42,6 +42,8 @@ const getEventos = async (req, res) => {
                      cidade: true,
                      estado: true,
                      endereco: true,
+                     latitude: true,
+                     longitude: true,
                   },
                },
                organizador: {
