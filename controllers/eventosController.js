@@ -60,7 +60,7 @@ const getEventos = async (req, res) => {
                   },
                },
             },
-            orderBy: { dataInicio: 'desc' },
+            orderBy: { dataInicio: 'asc' },
             skip: parseInt(skip),
             take: parseInt(limit),
          }),
