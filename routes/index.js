@@ -37,7 +37,8 @@ router.get('/auth/profile', authMiddleware, authController.getProfile)
 
 // ===== ROTAS PROTEGIDAS - EVENTOS =====
 
-router.post('/eventos', authMiddleware, isOrganizador, eventoValidator, eventosController.createEvento)
+// router.post('/eventos', authMiddleware, isOrganizador, eventoValidator, eventosController.createEvento)
+router.post('/eventos', authMiddleware, eventoValidator, eventosController.createEvento)
 router.put('/eventos/:id', authMiddleware, isOrganizador, eventosController.updateEvento)
 router.delete('/eventos/:id', authMiddleware, isOrganizador, eventosController.deleteEvento)
 router.get('/meus-eventos', authMiddleware, isOrganizador, eventosController.getMeusEventos)
