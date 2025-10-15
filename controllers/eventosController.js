@@ -2,7 +2,7 @@ const prisma = require('../config/prisma')
 
 const getEventos = async (req, res) => {
    try {
-      const { categoria, cidade, status = 'publicado', tipo, busca, page = 1, limit = 10 } = req.query
+      const { categoria, cidade, status, tipo, busca, page = 1, limit = 10 } = req.query
 
       const skip = (page - 1) * limit
       const where = {}
