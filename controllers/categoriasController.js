@@ -44,4 +44,36 @@ const createCategoria = async (req, res) => {
    }
 }
 
-module.exports = { getCategorias, createCategoria }
+const deleteCategoria = async (req, res) => {
+   try {
+      const { id } = req.params
+
+      const categoria = await prisma.categoria.findUnique({
+         where: { id: parseInt(id) },
+         include: {
+            _count: {
+               select: { eventos: true },
+            },
+         },
+      })
+
+      if (!categoria) {
+         return res.status(404).json({ error: 'Categoria nao encontrada' })
+      }
+
+      if (categoria._count.eventos > 0) {
+         return res.status(400).json({ error: 'Nao é possivel deletar uma categoria com eventos' })
+      }
+
+      await prisma.categoria.delete({
+         where: { id: parseInt(id) },
+      })
+
+      res.json({ message: 'Categoria deletada com sucesso' })
+   } catch (error) {
+      console.error('Erro ao deletar categoria:', error)
+      res.status(500).json({ error: 'Erro ao deletar categoria' })
+   }
+}
+
+module.exports = { getCategorias, createCategoria, deleteCategoria }

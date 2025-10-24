@@ -554,6 +554,31 @@
  *         description: Apenas administradores
  */
 
+/**
+ * @swagger
+ * /api/categorias/{id}:
+ *   delete:
+ *     tags:
+ *       - Categorias
+ *     summary: Apagar categoria
+ *     description: Apaga uma categoria (apenas admins)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Categoria apagada
+ *       400:
+ *         description: Categoria nao pode ser apagada
+ *       403:
+ *         description: Apenas administradores
+ */
+
 // ============================================
 // LOCAIS
 // ============================================
