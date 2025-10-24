@@ -44,6 +44,23 @@ const createCategoria = async (req, res) => {
    }
 }
 
+const updateCategoria = async (req, res) => {
+   try {
+      const { id } = req.params
+      const { nome, descricao, icone, cor } = req.body
+
+      const categoria = await prisma.categoria.update({
+         where: { id: parseInt(id) },
+         data: { nome, descricao, icone, cor },
+      })
+
+      res.json({ message: 'Categoria atualizada com sucesso', categoria })
+   } catch (error) {
+      console.error('Erro ao atualizar categoria:', error)
+      res.status(500).json({ error: 'Erro ao atualizar categoria' })
+   }
+}
+
 const deleteCategoria = async (req, res) => {
    try {
       const { id } = req.params
@@ -76,4 +93,4 @@ const deleteCategoria = async (req, res) => {
    }
 }
 
-module.exports = { getCategorias, createCategoria, deleteCategoria }
+module.exports = { getCategorias, createCategoria, deleteCategoria, updateCategoria }

@@ -557,6 +557,50 @@
 /**
  * @swagger
  * /api/categorias/{id}:
+ *   put:
+ *     tags:
+ *       - Categorias
+ *     summary: Atualizar categoria
+ *     description: Atualiza informações de uma categoria (apenas admins)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nome
+ *             properties:
+ *               nome:
+ *                 type: string
+ *                 example: Marketing Digital
+ *               descricao:
+ *                 type: string
+ *               icone:
+ *                 type: string
+ *               cor:
+ *                 type: string
+ *                 example: #ff0000
+ *     responses:
+ *       200:
+ *         description: Categoria atualizada
+ *       400:
+ *         description: Categoria nao pode ser atualizada
+ *       403:
+ *         description: Apenas administradores
+ */
+
+/**
+ * @swagger
+ * /api/categorias/{id}:
  *   delete:
  *     tags:
  *       - Categorias

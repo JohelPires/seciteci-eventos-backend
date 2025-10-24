@@ -63,6 +63,8 @@ router.patch('/notificacoes/marcar-todas-lidas', authMiddleware, notificacoesCon
 // ===== ROTAS ADMIN - CATEGORIAS E LOCAIS =====
 
 router.post('/categorias', authMiddleware, isAdmin, categoriasController.createCategoria)
+
+router.put('/categorias/:id', authMiddleware, isAdmin, categoriasController.updateCategoria)
 router.delete('/categorias/:id', authMiddleware, isAdmin, categoriasController.deleteCategoria)
 
 router.post('/locais', authMiddleware, isOrganizador, locaisController.createLocal)
