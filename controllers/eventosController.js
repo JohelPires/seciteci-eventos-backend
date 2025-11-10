@@ -12,7 +12,7 @@ const getEventos = async (req, res) => {
       }
 
       if (cidade) {
-         where.local = { cidade }
+         where.LocalCidade = cidade
       }
 
       if (status) {
@@ -27,6 +27,8 @@ const getEventos = async (req, res) => {
          where.OR = [
             { titulo: { contains: busca, mode: 'insensitive' } },
             { descricao: { contains: busca, mode: 'insensitive' } },
+            { LocalCidade: { contains: busca, mode: 'insensitive' } },
+            { LocalNome: { contains: busca, mode: 'insensitive' } },
          ]
       }
 
@@ -35,17 +37,6 @@ const getEventos = async (req, res) => {
             where,
             include: {
                categoria: true,
-               local: {
-                  select: {
-                     id: true,
-                     nome: true,
-                     cidade: true,
-                     estado: true,
-                     endereco: true,
-                     latitude: true,
-                     longitude: true,
-                  },
-               },
                organizador: {
                   select: {
                      id: true,
@@ -90,7 +81,6 @@ const getEventoById = async (req, res) => {
          where: { id: parseInt(id) },
          include: {
             categoria: true,
-            local: true,
             organizador: {
                select: {
                   id: true,
@@ -155,7 +145,6 @@ const createEvento = async (req, res) => {
          titulo,
          descricao,
          categoriaId,
-         localId,
          dataInicio,
          dataFim,
          horarioAbertura,
@@ -164,6 +153,21 @@ const createEvento = async (req, res) => {
          valorInscricao,
          tipoEvento,
          linkOnline,
+         linkGoogleMaps,
+         linkPaginaEvento,
+         LocalNome,
+         LocalEndereco,
+         LocalNumero,
+         LocalComplemento,
+         LocalBairro,
+         LocalCidade,
+         LocalEstado,
+         LocalCep,
+         LocalPais,
+         LocalCapacidade,
+         LocalLatitude,
+         LocalLongitude,
+         LocalObservacoes,
          imagemCapa,
          status,
          publicoAlvo,
@@ -175,7 +179,6 @@ const createEvento = async (req, res) => {
             titulo,
             descricao,
             categoriaId: categoriaId ? parseInt(categoriaId) : null,
-            localId: localId ? parseInt(localId) : null,
             organizadorId: req.userId,
             dataInicio: new Date(dataInicio),
             dataFim: new Date(dataFim),
@@ -186,6 +189,21 @@ const createEvento = async (req, res) => {
             valorInscricao: valorInscricao || 0,
             tipoEvento: tipoEvento || 'presencial',
             linkOnline,
+            LocalLinkGoogleMaps: linkGoogleMaps,
+            linkPaginaEvento,
+            LocalNome: LocalNome || 'A definir',
+            LocalEndereco: LocalEndereco || '',
+            LocalNumero,
+            LocalComplemento,
+            LocalBairro,
+            LocalCidade: LocalCidade || 'Cuiabá',
+            LocalEstado: LocalEstado || 'MT',
+            LocalCep,
+            LocalPais: LocalPais || 'Brasil',
+            LocalCapacidade: LocalCapacidade ? parseInt(LocalCapacidade) : null,
+            LocalLatitude: LocalLatitude ? parseFloat(LocalLatitude) : null,
+            LocalLongitude: LocalLongitude ? parseFloat(LocalLongitude) : null,
+            LocalObservacoes,
             imagemCapa,
             status: status || 'rascunho',
             publicoAlvo,
@@ -193,7 +211,6 @@ const createEvento = async (req, res) => {
          },
          include: {
             categoria: true,
-            local: true,
             organizador: {
                select: {
                   id: true,
@@ -232,6 +249,11 @@ const updateEvento = async (req, res) => {
 
       const dadosAtualizacao = { ...req.body }
 
+      // Remover campos que não devem ser atualizados diretamente
+      delete dadosAtualizacao.id
+      delete dadosAtualizacao.organizadorId
+      delete dadosAtualizacao.dataCriacao
+
       // Converter datas se fornecidas
       if (dadosAtualizacao.dataInicio) {
          dadosAtualizacao.dataInicio = new Date(dadosAtualizacao.dataInicio)
@@ -246,12 +268,38 @@ const updateEvento = async (req, res) => {
          dadosAtualizacao.horarioEncerramento = new Date(`1970-01-01T${dadosAtualizacao.horarioEncerramento}`)
       }
 
+      // Converter números se fornecidos
+      if (dadosAtualizacao.capacidadeMaxima) {
+         dadosAtualizacao.capacidadeMaxima = parseInt(dadosAtualizacao.capacidadeMaxima)
+      }
+      if (dadosAtualizacao.LocalCapacidade) {
+         dadosAtualizacao.LocalCapacidade = parseInt(dadosAtualizacao.LocalCapacidade)
+      }
+      if (dadosAtualizacao.LocalLatitude) {
+         dadosAtualizacao.LocalLatitude = parseFloat(dadosAtualizacao.LocalLatitude)
+      }
+      if (dadosAtualizacao.LocalLongitude) {
+         dadosAtualizacao.LocalLongitude = parseFloat(dadosAtualizacao.LocalLongitude)
+      }
+
+      // Mapear nomes de campos se necessário
+      if (dadosAtualizacao.linkGoogleMaps !== undefined) {
+         dadosAtualizacao.LocalLinkGoogleMaps = dadosAtualizacao.linkGoogleMaps
+         delete dadosAtualizacao.linkGoogleMaps
+      }
+
       const eventoAtualizado = await prisma.evento.update({
          where: { id: parseInt(id) },
          data: dadosAtualizacao,
          include: {
             categoria: true,
-            local: true,
+            organizador: {
+               select: {
+                  id: true,
+                  nome: true,
+                  email: true,
+               },
+            },
          },
       })
 
@@ -309,7 +357,6 @@ const getMeusEventos = async (req, res) => {
          where: { organizadorId: req.userId },
          include: {
             categoria: true,
-            local: true,
             _count: {
                select: {
                   inscricoes: true,
@@ -327,6 +374,62 @@ const getMeusEventos = async (req, res) => {
    }
 }
 
+const getEventosPorCidade = async (req, res) => {
+   try {
+      const cidades = await prisma.evento.groupBy({
+         by: ['LocalCidade'],
+         _count: {
+            _all: true,
+         },
+         where: {
+            status: 'publicado',
+         },
+         orderBy: {
+            _count: {
+               LocalCidade: 'desc',
+            },
+         },
+      })
+
+      res.json({ cidades })
+   } catch (error) {
+      console.error('Erro ao buscar eventos por cidade:', error)
+      res.status(500).json({ error: 'Erro ao buscar dados' })
+   }
+}
+
+const getEventosDestaque = async (req, res) => {
+   try {
+      const eventos = await prisma.evento.findMany({
+         where: {
+            destaque: true,
+            status: 'publicado',
+         },
+         include: {
+            categoria: true,
+            organizador: {
+               select: {
+                  id: true,
+                  nome: true,
+               },
+            },
+            _count: {
+               select: {
+                  inscricoes: true,
+               },
+            },
+         },
+         orderBy: { dataInicio: 'asc' },
+         take: 6,
+      })
+
+      res.json({ eventos })
+   } catch (error) {
+      console.error('Erro ao buscar eventos em destaque:', error)
+      res.status(500).json({ error: 'Erro ao buscar eventos' })
+   }
+}
+
 module.exports = {
    getEventos,
    getEventoById,
@@ -334,4 +437,6 @@ module.exports = {
    updateEvento,
    deleteEvento,
    getMeusEventos,
+   getEventosPorCidade,
+   getEventosDestaque,
 }

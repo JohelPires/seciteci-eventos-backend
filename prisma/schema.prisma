@@ -79,6 +79,21 @@ model Evento {
   valorInscricao       Decimal   @default(0.00) @map("valor_inscricao") @db.Decimal(10, 2)
   tipoEvento           String    @default("presencial") @map("tipo_evento") @db.VarChar(20)
   linkOnline           String?   @map("link_online") @db.VarChar(255)
+  LocalLinkGoogleMaps       String?   @map("link_google_maps") @db.VarChar(255)
+  LocalNome        String   @map("local_nome") @db.VarChar(100)
+  LocalEndereco    String   @map("local_endereco") @db.VarChar(200)
+  LocalNumero      String?  @map("local_numero") @db.VarChar(10)
+  LocalComplemento String?  @map("local_complemento") @db.VarChar(50)
+  LocalBairro      String?  @map("local_bairro") @db.VarChar(50)
+  LocalCidade      String   @map("local_cidade") @db.VarChar(50)
+  LocalEstado      String   @map("local_estado") @db.Char(2)
+  LocalCep         String?  @map("local_cep") @db.VarChar(9)
+  LocalPais        String   @map("local_pais") @default("Brasil") @db.VarChar(50)
+  LocalCapacidade  Int?     @map("local_capacidade")
+  LocalLatitude    Decimal? @map("local_latitude") @db.Decimal(10, 8)
+  LocalLongitude   Decimal? @map("local_longitude") @db.Decimal(11, 8)
+  LocalObservacoes String?  @map("local_observacoes") @db.Text
+  linkPaginaEvento     String?   @map("link_pagina_evento") @db.VarChar(255)
   imagemCapa           String?   @map("imagem_capa") @db.VarChar(255)
   status               String    @default("rascunho") @db.VarChar(20)
   publicoAlvo          String?   @map("publico_alvo") @db.Text
@@ -86,6 +101,7 @@ model Evento {
   dataCriacao          DateTime  @default(now()) @map("data_criacao") @db.Timestamp(6)
   dataAtualizacao      DateTime  @updatedAt @map("data_atualizacao") @db.Timestamp(6)
   destaque             Boolean   @default(false)
+
 
   categoria    Categoria?    @relation(fields: [categoriaId], references: [id])
   local        Local?        @relation(fields: [localId], references: [id])

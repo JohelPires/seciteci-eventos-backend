@@ -16,8 +16,6 @@
  *     description: Inscrições e participação em eventos
  *   - name: Categorias
  *     description: Categorias de eventos
- *   - name: Locais
- *     description: Locais onde eventos acontecem
  *   - name: Avaliações
  *     description: Sistema de avaliações de eventos
  *   - name: Notificações
@@ -170,7 +168,7 @@
  *         name: busca
  *         schema:
  *           type: string
- *         description: Buscar por título ou descrição
+ *         description: Buscar por título, descrição, cidade ou nome do local
  *       - in: query
  *         name: page
  *         schema:
@@ -232,6 +230,10 @@
  *               - dataInicio
  *               - dataFim
  *               - tipoEvento
+ *               - LocalNome
+ *               - LocalEndereco
+ *               - LocalCidade
+ *               - LocalEstado
  *             properties:
  *               titulo:
  *                 type: string
@@ -240,9 +242,6 @@
  *                 type: string
  *                 example: Aprenda Node.js do zero ao avançado
  *               categoriaId:
- *                 type: integer
- *                 example: 1
- *               localId:
  *                 type: integer
  *                 example: 1
  *               dataInicio:
@@ -262,12 +261,63 @@
  *               capacidadeMaxima:
  *                 type: integer
  *                 example: 50
+ *               valorInscricao:
+ *                 type: number
+ *                 example: 0
  *               tipoEvento:
  *                 type: string
  *                 enum: [presencial, online, hibrido]
  *               linkOnline:
  *                 type: string
  *                 example: https://meet.google.com/abc-defg-hij
+ *               linkGoogleMaps:
+ *                 type: string
+ *                 example: https://maps.app.goo.gl/exemplo
+ *                 description: Link do Google Maps para o local do evento
+ *               linkPaginaEvento:
+ *                 type: string
+ *                 example: https://meuevento.com.br
+ *                 description: Link da página do evento
+ *               LocalNome:
+ *                 type: string
+ *                 example: Centro de Eventos do Pantanal
+ *               LocalEndereco:
+ *                 type: string
+ *                 example: Av. Bernardo Antônio de Oliveira Neto
+ *               LocalNumero:
+ *                 type: string
+ *                 example: 500
+ *               LocalComplemento:
+ *                 type: string
+ *                 example: Centro de Convenções
+ *               LocalBairro:
+ *                 type: string
+ *                 example: Centro Político Administrativo
+ *               LocalCidade:
+ *                 type: string
+ *                 example: Cuiabá
+ *               LocalEstado:
+ *                 type: string
+ *                 example: MT
+ *               LocalCep:
+ *                 type: string
+ *                 example: 78049-900
+ *               LocalPais:
+ *                 type: string
+ *                 default: Brasil
+ *               LocalCapacidade:
+ *                 type: integer
+ *                 example: 800
+ *               LocalLatitude:
+ *                 type: number
+ *                 format: double
+ *                 example: -15.601
+ *               LocalLongitude:
+ *                 type: number
+ *                 format: double
+ *                 example: -56.0974
+ *               LocalObservacoes:
+ *                 type: string
  *               imagemCapa:
  *                 type: string
  *               status:
@@ -317,6 +367,24 @@
  *               status:
  *                 type: string
  *                 enum: [rascunho, publicado, cancelado, encerrado]
+ *               linkGoogleMaps:
+ *                 type: string
+ *                 description: Link do Google Maps
+ *               linkPaginaEvento:
+ *                 type: string
+ *                 description: Link da página do evento
+ *               LocalNome:
+ *                 type: string
+ *               LocalEndereco:
+ *                 type: string
+ *               LocalCidade:
+ *                 type: string
+ *               LocalEstado:
+ *                 type: string
+ *               LocalLatitude:
+ *                 type: number
+ *               LocalLongitude:
+ *                 type: number
  *     responses:
  *       200:
  *         description: Evento atualizado
@@ -368,6 +436,32 @@
  *         description: Lista de eventos do organizador
  *       403:
  *         description: Apenas organizadores e admins
+ */
+
+/**
+ * @swagger
+ * /api/eventos/destaque:
+ *   get:
+ *     tags:
+ *       - Eventos
+ *     summary: Eventos em destaque
+ *     description: Retorna eventos marcados como destaque e publicados
+ *     responses:
+ *       200:
+ *         description: Lista de eventos em destaque (máximo 6)
+ */
+
+/**
+ * @swagger
+ * /api/eventos/por-cidade:
+ *   get:
+ *     tags:
+ *       - Eventos
+ *     summary: Eventos agrupados por cidade
+ *     description: Retorna contagem de eventos publicados por cidade
+ *     responses:
+ *       200:
+ *         description: Lista de cidades com contagem de eventos
  */
 
 // ============================================
@@ -544,7 +638,7 @@
  *                 type: string
  *               cor:
  *                 type: string
- *                 example: #ff0000
+ *                 example: bg-blue-600
  *     responses:
  *       201:
  *         description: Categoria criada
@@ -576,24 +670,20 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - nome
  *             properties:
  *               nome:
  *                 type: string
- *                 example: Marketing Digital
  *               descricao:
  *                 type: string
  *               icone:
  *                 type: string
  *               cor:
  *                 type: string
- *                 example: #ff0000
  *     responses:
  *       200:
  *         description: Categoria atualizada
  *       400:
- *         description: Categoria nao pode ser atualizada
+ *         description: Categoria não pode ser atualizada
  *       403:
  *         description: Apenas administradores
  */
@@ -618,92 +708,9 @@
  *       200:
  *         description: Categoria apagada
  *       400:
- *         description: Categoria nao pode ser apagada
+ *         description: Categoria não pode ser apagada
  *       403:
  *         description: Apenas administradores
- */
-
-// ============================================
-// LOCAIS
-// ============================================
-
-/**
- * @swagger
- * /api/locais:
- *   get:
- *     tags:
- *       - Locais
- *     summary: Listar locais
- *     description: Retorna todos os locais cadastrados
- *     parameters:
- *       - in: query
- *         name: cidade
- *         schema:
- *           type: string
- *       - in: query
- *         name: estado
- *         schema:
- *           type: string
- *         example: SP
- *     responses:
- *       200:
- *         description: Lista de locais
- */
-
-/**
- * @swagger
- * /api/locais:
- *   post:
- *     tags:
- *       - Locais
- *     summary: Criar local
- *     description: Cadastra um novo local (organizadores e admins)
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - nome
- *               - endereco
- *               - cidade
- *               - estado
- *             properties:
- *               nome:
- *                 type: string
- *                 example: Auditório Principal
- *               endereco:
- *                 type: string
- *                 example: Av. Paulista
- *               numero:
- *                 type: string
- *                 example: 1000
- *               complemento:
- *                 type: string
- *               bairro:
- *                 type: string
- *               cidade:
- *                 type: string
- *                 example: Cuiabá
- *               estado:
- *                 type: string
- *                 example: MT
- *               cep:
- *                 type: string
- *               capacidade:
- *                 type: integer
- *               latitude:
- *                 type: number
- *               longitude:
- *                 type: number
- *     responses:
- *       201:
- *         description: Local criado
- *       403:
- *         description: Sem permissão
  */
 
 // ============================================
