@@ -10,6 +10,7 @@ const categoriasController = require('../controllers/categoriasController')
 const locaisController = require('../controllers/locaisController')
 const avaliacoesController = require('../controllers/avaliacoesController')
 const notificacoesController = require('../controllers/notificacoesController')
+const usuariosController = require('../controllers/usuariosController')
 
 // ===== ROTAS PÚBLICAS =====
 
@@ -34,6 +35,8 @@ router.get('/eventos/:eventoId/avaliacoes', avaliacoesController.getAvaliacoesEv
 
 // ===== ROTAS PROTEGIDAS - USUÁRIOS =====
 router.get('/auth/profile', authMiddleware, authController.getProfile)
+
+router.get('/usuarios', authMiddleware, isAdmin, usuariosController.getUsuarios)
 
 // ===== ROTAS PROTEGIDAS - EVENTOS =====
 

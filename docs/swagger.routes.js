@@ -128,6 +128,21 @@
  *         description: Token não fornecido ou inválido
  */
 
+/**
+ * @swagger
+ * /api/usuarios:
+ *   get:
+ *     tags:
+ *       - Autenticação
+ *     summary: Listar usuários
+ *     description: Retorna lista paginada de usuários
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de usuários
+ */
+
 // ============================================
 // EVENTOS
 // ============================================
