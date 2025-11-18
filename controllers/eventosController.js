@@ -1,8 +1,19 @@
+const NodeCache = require('node-cache')
+const cache = new NodeCache({ stdTTL: 86400, checkperiod: 3600 }) // TTL = 60s
+
 const prisma = require('../config/prisma')
 
 const getEventos = async (req, res) => {
    try {
       const { categoria, cidade, status, tipo, busca, page = 1, limit = 10 } = req.query
+
+      // Criar uma chave única com base nos filtros
+      const cacheKey = `eventos:${JSON.stringify(req.query)}`
+      const cachedData = cache.get(cacheKey)
+
+      if (cachedData) {
+         return res.json({ ...cachedData, cache: true }) // mostra se veio do cache
+      }
 
       const skip = (page - 1) * limit
       const where = {}
@@ -37,19 +48,6 @@ const getEventos = async (req, res) => {
             where,
             include: {
                categoria: true,
-               organizador: {
-                  select: {
-                     id: true,
-                     nome: true,
-                     email: true,
-                  },
-               },
-               _count: {
-                  select: {
-                     inscricoes: true,
-                     avaliacoes: true,
-                  },
-               },
             },
             orderBy: { dataInicio: 'asc' },
             skip: parseInt(skip),
@@ -58,7 +56,7 @@ const getEventos = async (req, res) => {
          prisma.evento.count({ where }),
       ])
 
-      res.json({
+      const responseData = {
          eventos,
          pagination: {
             page: parseInt(page),
@@ -66,7 +64,13 @@ const getEventos = async (req, res) => {
             total,
             totalPages: Math.ceil(total / limit),
          },
-      })
+         cache: false,
+      }
+
+      // Armazenar os dados no cache
+      cache.set(cacheKey, responseData)
+
+      res.json(responseData)
    } catch (error) {
       console.error('Erro ao buscar eventos:', error)
       res.status(500).json({ error: 'Erro ao buscar eventos' })
@@ -76,6 +80,14 @@ const getEventos = async (req, res) => {
 const getEventoById = async (req, res) => {
    try {
       const { id } = req.params
+
+      // Pegar do cache
+      const cacheKey = `evento:${id}`
+      const cachedEvento = cache.get(cacheKey)
+
+      if (cachedEvento) {
+         return res.json({ ...cachedEvento, cache: true })
+      }
 
       const evento = await prisma.evento.findUnique({
          where: { id: parseInt(id) },
@@ -127,12 +139,18 @@ const getEventoById = async (req, res) => {
             ? evento.avaliacoes.reduce((acc, av) => acc + av.nota, 0) / evento.avaliacoes.length
             : 0
 
-      res.json({
+      const responseData = {
          evento: {
             ...evento,
             mediaAvaliacoes: mediaAvaliacoes.toFixed(1),
          },
-      })
+         cache: false,
+      }
+
+      // Armazenar os dados no cache
+      cache.set(cacheKey, responseData)
+
+      res.json(responseData)
    } catch (error) {
       console.error('Erro ao buscar evento:', error)
       res.status(500).json({ error: 'Erro ao buscar evento' })
@@ -221,6 +239,8 @@ const createEvento = async (req, res) => {
          },
       })
 
+      cache.flushAll() // remove todo cache
+
       res.status(201).json({
          message: 'Evento criado com sucesso',
          evento,
@@ -303,6 +323,8 @@ const updateEvento = async (req, res) => {
          },
       })
 
+      cache.flushAll() // remove todo cache
+
       res.json({
          message: 'Evento atualizado com sucesso',
          evento: eventoAtualizado,
@@ -343,6 +365,8 @@ const deleteEvento = async (req, res) => {
       await prisma.evento.delete({
          where: { id: parseInt(id) },
       })
+
+      cache.flushAll() // remove todo cache
 
       res.json({ message: 'Evento deletado com sucesso' })
    } catch (error) {
