@@ -160,28 +160,63 @@
  *
  */
 
-const nums = [1, 2, 3, 7, 4, 1]
-const k = 3
+// const nums = [1, 2, 3, 7, 4, 1]
+// const k = 3
 
-function largestSumArray(nums, k) {
-   let windowSum = 0
+// function largestSumArray(nums, k) {
+//    let windowSum = 0
 
-   for (i = 0; i < k; i++) {
-      windowSum = windowSum + nums[i]
-   }
+//    for (i = 0; i < k; i++) {
+//       windowSum = windowSum + nums[i]
+//    }
 
-   let largestSum = windowSum
+//    let largestSum = windowSum
 
-   console.log(largestSum)
+//    console.log(largestSum)
 
-   for (let right = k; right < nums.length; right++) {
-      let left = right - k
-      windowSum = windowSum - nums[left]
-      windowSum = windowSum + nums[right]
-      largestSum = Math.max(largestSum, windowSum)
-   }
+//    for (let right = k; right < nums.length; right++) {
+//       let left = right - k
+//       windowSum = windowSum - nums[left]
+//       windowSum = windowSum + nums[right]
+//       largestSum = Math.max(largestSum, windowSum)
+//    }
 
-   return largestSum
+//    return largestSum
+// }
+
+// console.log(largestSumArray(nums, k))
+
+// function reverseString(str) {
+//    let newStr = ''
+//    for (let i = str.length - 1; i >= 0; i--) {
+//       newStr = newStr + str[i]
+//    }
+//    return newStr
+// }
+
+function reverseString(str) {
+   return str.split('').reverse().join('')
 }
 
-console.log(largestSumArray(nums, k))
+let string = 'hello'
+
+console.log(reverseString(string))
+
+function reverseInt(num) {
+   let negative = false
+   if (num < 0) {
+      negative = true
+      num = -num
+   }
+
+   const numStr = parseInt(num.toString().split('').reverse().join(''))
+   if (negative) {
+      return -numStr
+   } else {
+      return numStr
+   }
+}
+
+let num = -12345
+
+console.log(reverseInt(num))
