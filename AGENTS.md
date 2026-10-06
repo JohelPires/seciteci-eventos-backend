@@ -5,7 +5,7 @@ REST API for event registration (Seciteci). Node.js + Express + Prisma + Postgre
 
 ## Dev commands
 - Full stack (preferred): `docker compose up --build` — API http://localhost:3030, Swagger `/api-docs`, health `/health`. Postgres on host `5433` (container `db:5432`), db/user/pass `sistema_eventos`/`postgres`/`postgres`.
-- Hot reload via nodemon + bind mount. After changing `package.json` or `prisma/schema.prisma`, rerun `docker compose up --build` (Prisma Client is generated in the image; `node_modules` is an anonymous volume).
+- Hot reload via nodemon + bind mount. After changing `package.json` or `prisma/schema.prisma`, rerun `docker compose up --build` (Prisma Client is generated in the image). Dependencies live in the **named volume** `node_modules` (mounted at `/app/node_modules`); a new dep is NOT visible until that volume is refreshed: `docker compose down && docker volume rm seciteci-eventos-backend_node_modules && docker compose up --build`. (Do NOT use `docker compose down -v` for this — it also wipes `pgdata`.)
 - Migrations run automatically on startup (`prisma migrate deploy`). Seed is manual only: `docker compose exec app npm run prisma:seed`.
 - Without Docker: `npm run dev`, but `.env` has `DATABASE_URL` commented out, so it fails until you set one. Inside Docker the compose env wins over `.env` (dotenv does not override existing process vars).
 - Prisma: `npm run prisma:generate | prisma:migrate | prisma:studio | prisma:seed`.

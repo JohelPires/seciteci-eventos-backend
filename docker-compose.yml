@@ -37,10 +37,11 @@ services:
       - "3030:3030"
     volumes:
       - .:/app
-      - /app/node_modules
+      - node_modules:/app/node_modules
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   pgdata:
+  node_modules:
