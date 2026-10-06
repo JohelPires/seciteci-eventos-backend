@@ -28,7 +28,7 @@ const sendTemplatedEmail = async (to, template) => {
 
 const sendMailSafe = (to, template) => {
    sendTemplatedEmail(to, template).catch((error) => {
-      console.error(`[email] Falha ao enviar para ${to} ("${template.subject}"):`, error.message)
+      console.error(`[email] Falha ao enviar para ${to} ("${template?.subject || 'sem assunto'}"):`, error?.message || error)
    })
 }
 

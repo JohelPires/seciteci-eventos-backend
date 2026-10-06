@@ -1,6 +1,8 @@
+const TIMEZONE = 'America/Cuiaba'
+
 const formatarData = (data) =>
    data
-      ? new Date(data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+      ? new Date(data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: TIMEZONE })
       : 'Nao informado'
 
 const eventoCriadoTemplate = ({ usuario, evento }) => {
