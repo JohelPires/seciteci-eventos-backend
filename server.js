@@ -6,6 +6,7 @@ const swaggerSpec = require('./config/swagger')
 require('dotenv').config()
 const routes = require('./routes')
 const prisma = require('./config/prisma')
+const { verifyMailer } = require('./config/mailer')
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -117,6 +118,8 @@ process.on('SIGINT', async () => {
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', async () => {
+   verifyMailer()
+
    // Testar conexão com banco
    let conectado = false
    try {

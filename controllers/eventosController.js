@@ -2,6 +2,8 @@ const NodeCache = require('node-cache')
 const cache = new NodeCache({ stdTTL: 86400, checkperiod: 3600 }) // TTL = 60s
 
 const prisma = require('../config/prisma')
+const { sendMailSafe } = require('../services/emailService')
+const { eventoCriadoTemplate } = require('../services/emailTemplates/eventoCriado')
 
 const getEventos = async (req, res) => {
    try {
@@ -240,6 +242,8 @@ const createEvento = async (req, res) => {
       })
 
       cache.flushAll() // remove todo cache
+
+      sendMailSafe(evento.organizador.email, eventoCriadoTemplate({ usuario: evento.organizador, evento }))
 
       res.status(201).json({
          message: 'Evento criado com sucesso',
