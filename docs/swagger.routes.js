@@ -373,6 +373,14 @@
  *                 type: string
  *               requisitos:
  *                 type: string
+ *               financiadorTipo:
+ *                 type: string
+ *                 enum: [publico, privado]
+ *                 description: Natureza do financiador do evento
+ *               financiadorNome:
+ *                 type: string
+ *                 example: Governo do Estado de Mato Grosso
+ *                 description: Nome do financiador do evento
  *     responses:
  *       201:
  *         description: Evento criado com sucesso
@@ -430,6 +438,13 @@
  *                 type: number
  *               LocalLongitude:
  *                 type: number
+ *               financiadorTipo:
+ *                 type: string
+ *                 enum: [publico, privado]
+ *                 description: Natureza do financiador do evento
+ *               financiadorNome:
+ *                 type: string
+ *                 description: Nome do financiador do evento
  *     responses:
  *       200:
  *         description: Evento atualizado

@@ -192,6 +192,8 @@ const createEvento = async (req, res) => {
          status,
          publicoAlvo,
          requisitos,
+         financiadorTipo,
+         financiadorNome,
       } = req.body
 
       const evento = await prisma.evento.create({
@@ -228,6 +230,8 @@ const createEvento = async (req, res) => {
             status: status || 'rascunho',
             publicoAlvo,
             requisitos,
+            financiadorTipo,
+            financiadorNome,
          },
          include: {
             categoria: true,

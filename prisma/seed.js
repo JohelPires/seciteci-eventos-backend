@@ -82,6 +82,8 @@ async function main() {
       // NOVEMBRO 2025
       {
          titulo: 'Tech Summit MT 2025',
+         financiadorTipo: 'privado',
+         financiadorNome: 'Federação das Indústrias de Mato Grosso (FIEMT)',
          descricao: 'Maior evento de tecnologia e inovação do Mato Grosso. Palestras, workshops e networking.',
          categoriaId: catTecnologia?.id,
          organizadorId: organizador.id,
@@ -113,6 +115,8 @@ async function main() {
       },
       {
          titulo: 'Workshop IA na Agricultura',
+         financiadorTipo: 'privado',
+         financiadorNome: 'SENAI Mato Grosso',
          descricao: 'Aprenda como IA está revolucionando o agronegócio. Cases e aplicações práticas.',
          categoriaId: catIA?.id,
          organizadorId: maria.id,
@@ -146,6 +150,8 @@ async function main() {
       // NOVEMBRO 2025 - DIA 10 (VÁRIOS EVENTOS)
       {
          titulo: 'Meetup de Startups - Manhã',
+         financiadorTipo: 'privado',
+         financiadorNome: 'Serviço Brasileiro de Apoio às Micro e Pequenas Empresas (Sebrae)',
          descricao: 'Networking entre empreendedores e investidores. Pitch de startups.',
          categoriaId: catNegocios?.id,
          organizadorId: admin.id,
@@ -177,6 +183,8 @@ async function main() {
       },
       {
          titulo: 'Workshop de Marketing Digital',
+         financiadorTipo: 'privado',
+         financiadorNome: 'SENAI Mato Grosso',
          descricao: 'Estratégias de marketing digital para pequenos e médios negócios.',
          categoriaId: catNegocios?.id,
          organizadorId: carlos.id,
@@ -208,6 +216,8 @@ async function main() {
       },
       {
          titulo: 'Palestra: Inovação no Agronegócio',
+         financiadorTipo: 'publico',
+         financiadorNome: 'Universidade Federal de Mato Grosso (UFMT)',
          descricao: 'Como a tecnologia está transformando o agro em Mato Grosso.',
          categoriaId: catAgro?.id,
          organizadorId: maria.id,
@@ -241,6 +251,8 @@ async function main() {
       // NOVEMBRO 2025 - OUTROS EVENTOS
       {
          titulo: 'Webinar: Futuro da IA',
+         financiadorTipo: 'privado',
+         financiadorNome: 'Instituto de Tecnologia e Inovação',
          descricao: 'Evento online sobre tendências da Inteligência Artificial para 2025.',
          categoriaId: catIA?.id,
          organizadorId: organizador.id,
@@ -273,6 +285,8 @@ async function main() {
       },
       {
          titulo: 'Hackathon Cuiabá 2025',
+         financiadorTipo: 'publico',
+         financiadorNome: 'Prefeitura Municipal de Cuiabá',
          descricao: 'Desenvolvimento intenso. Traga sua ideia e monte seu time!',
          categoriaId: catTecnologia?.id,
          organizadorId: admin.id,
@@ -306,6 +320,8 @@ async function main() {
       // DEZEMBRO 2025 - DIA 5 (MÚLTIPLOS EVENTOS)
       {
          titulo: 'Agro Tech Fair',
+         financiadorTipo: 'privado',
+         financiadorNome: 'Associação dos Produtores de Soja e Milho de Mato Grosso (Aprosoja)',
          descricao: 'Feira de tecnologia para o agronegócio. Exposição e palestras.',
          categoriaId: catAgro?.id,
          organizadorId: organizador.id,
@@ -337,6 +353,8 @@ async function main() {
       },
       {
          titulo: 'Curso: Drones na Agricultura',
+         financiadorTipo: 'privado',
+         financiadorNome: 'Serviço Nacional de Aprendizagem Rural (Senar)',
          descricao: 'Capacitação no uso de drones para agricultura.',
          categoriaId: catAgro?.id,
          organizadorId: maria.id,
@@ -368,6 +386,8 @@ async function main() {
       },
       {
          titulo: 'Networking Empresarial - Sinop',
+         financiadorTipo: 'privado',
+         financiadorNome: 'Câmara de Dirigentes Lojistas de Sinop',
          descricao: 'Encontro de empresários do norte de Mato Grosso.',
          categoriaId: catNegocios?.id,
          organizadorId: carlos.id,
@@ -401,6 +421,8 @@ async function main() {
       // DEZEMBRO 2025 - CONTINUAÇÃO
       {
          titulo: 'DevFest Mato Grosso',
+         financiadorTipo: 'privado',
+         financiadorNome: 'Google Developer Groups (GDG Cuiabá)',
          descricao: 'Festival de desenvolvedores com palestras sobre tecnologias.',
          categoriaId: catTecnologia?.id,
          organizadorId: admin.id,
@@ -432,6 +454,8 @@ async function main() {
       },
       {
          titulo: 'Semana da Inovação - Rondonópolis',
+         financiadorTipo: 'publico',
+         financiadorNome: 'Secretaria de Ciência, Tecnologia e Inovação de Mato Grosso (Seciteci)',
          descricao: 'Dedicada à inovação tecnológica e empreendedorismo.',
          categoriaId: catInovacao?.id,
          organizadorId: organizador.id,
@@ -465,6 +489,8 @@ async function main() {
       // DEZEMBRO 2025 - DIA 8 (MÚLTIPLOS EVENTOS)
       {
          titulo: 'Encontro de Mulheres na Tecnologia',
+         financiadorTipo: 'privado',
+         financiadorNome: 'WomakersCode',
          descricao: 'Palestras inspiradoras de mulheres na tech.',
          categoriaId: catTecnologia?.id,
          organizadorId: maria.id,
@@ -496,6 +522,8 @@ async function main() {
       },
       {
          titulo: 'Workshop: Liderança Feminina',
+         financiadorTipo: 'privado',
+         financiadorNome: 'Sebrae Mato Grosso',
          descricao: 'Desenvolvimento de habilidades de liderança.',
          categoriaId: catNegocios?.id,
          organizadorId: maria.id,
@@ -527,6 +555,8 @@ async function main() {
       },
       {
          titulo: 'Webinar: Empreendedorismo Feminino',
+         financiadorTipo: 'privado',
+         financiadorNome: 'Sebrae Mato Grosso',
          descricao: 'Desafios e oportunidades para mulheres empreendedoras.',
          categoriaId: catNegocios?.id,
          organizadorId: carlos.id,
@@ -561,6 +591,8 @@ async function main() {
       // DEZEMBRO 2025 - EVENTOS FINAIS
       {
          titulo: 'Expo Tech Brasil Central',
+         financiadorTipo: 'publico',
+         financiadorNome: 'Governo do Estado de Mato Grosso',
          descricao: 'Maior exposição de tecnologia da região Centro-Oeste.',
          categoriaId: catTecnologia?.id,
          organizadorId: admin.id,
@@ -592,6 +624,8 @@ async function main() {
       },
       {
          titulo: 'Curso Avançado de Machine Learning',
+         financiadorTipo: 'publico',
+         financiadorNome: 'Universidade Federal de Mato Grosso (UFMT)',
          descricao: 'Curso intensivo sobre ML e Deep Learning com certificado.',
          categoriaId: catIA?.id,
          organizadorId: organizador.id,

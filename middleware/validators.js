@@ -30,6 +30,17 @@ const eventoValidator = [
   body("tipoEvento")
     .isIn(["presencial", "online", "hibrido"])
     .withMessage("Tipo de evento inválido"),
+  body("financiadorTipo")
+    .optional({ values: "falsy" })
+    .isIn(["publico", "privado"])
+    .withMessage("Tipo de financiador inválido"),
+  body("financiadorNome")
+    .optional({ values: "falsy" })
+    .isString()
+    .withMessage("Nome do financiador inválido")
+    .trim()
+    .isLength({ max: 150 })
+    .withMessage("Nome do financiador deve ter no máximo 150 caracteres"),
   validate,
 ];
 
