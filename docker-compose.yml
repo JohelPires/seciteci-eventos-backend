@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sistema_eventos
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sistema_eventos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: sh -c "npx prisma migrate deploy && npm run dev"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/sistema_eventos?schema=public"
+      PORT: "3030"
+      NODE_ENV: development
+      JWT_SECRET: "dev-secret-local"
+    ports:
+      - "3030:3030"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
