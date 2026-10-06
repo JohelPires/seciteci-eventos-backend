@@ -65,6 +65,47 @@ const getUsuarios = async (req, res) => {
    }
 }
 
+const promoverUsuarioAdmin = async (req, res) => {
+   try {
+      const id = parseInt(req.params.id, 10)
+
+      if (!Number.isInteger(id) || id < 1) {
+         return res.status(400).json({ error: 'ID de usuário inválido' })
+      }
+
+      const usuario = await prisma.usuario.findUnique({
+         where: { id },
+         select: { id: true, nome: true, email: true, tipoUsuario: true },
+      })
+
+      if (!usuario) {
+         return res.status(404).json({ error: 'Usuário não encontrado' })
+      }
+
+      if (usuario.tipoUsuario === 'admin') {
+         return res.status(200).json({
+            message: 'Usuário já é administrador',
+            user: usuario,
+         })
+      }
+
+      const user = await prisma.usuario.update({
+         where: { id },
+         data: { tipoUsuario: 'admin' },
+         select: { id: true, nome: true, email: true, tipoUsuario: true },
+      })
+
+      res.status(200).json({
+         message: 'Usuário promovido a administrador',
+         user,
+      })
+   } catch (error) {
+      console.error('Erro ao promover usuário a administrador:', error)
+      res.status(500).json({ error: 'Erro ao promover usuário a administrador' })
+   }
+}
+
 module.exports = {
    getUsuarios,
+   promoverUsuarioAdmin,
 }

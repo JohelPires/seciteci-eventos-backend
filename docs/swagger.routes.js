@@ -143,6 +143,36 @@
  *         description: Lista de usuários
  */
 
+/**
+ * @swagger
+ * /api/usuarios/{id}/promover:
+ *   patch:
+ *     tags:
+ *       - Autenticação
+ *     summary: Promover usuário a administrador
+ *     description: Define o tipo do usuário informado como admin. A mudança passa a valer a partir do próximo login do usuário, pois o tipo é embutido no token JWT.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID do usuário a ser promovido
+ *     responses:
+ *       200:
+ *         description: Usuário promovido (ou já administrador)
+ *       400:
+ *         description: ID de usuário inválido
+ *       401:
+ *         description: Token não fornecido ou inválido
+ *       403:
+ *         description: Acesso negado. Apenas administradores.
+ *       404:
+ *         description: Usuário não encontrado
+ */
+
 // ============================================
 // EVENTOS
 // ============================================

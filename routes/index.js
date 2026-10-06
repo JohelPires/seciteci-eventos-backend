@@ -38,6 +38,8 @@ router.get('/auth/profile', authMiddleware, authController.getProfile)
 
 router.get('/usuarios', authMiddleware, isAdmin, usuariosController.getUsuarios)
 
+router.patch('/usuarios/:id/promover', authMiddleware, isAdmin, usuariosController.promoverUsuarioAdmin)
+
 // ===== ROTAS PROTEGIDAS - EVENTOS =====
 
 // router.post('/eventos', authMiddleware, isOrganizador, eventoValidator, eventosController.createEvento)
