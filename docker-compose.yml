@@ -26,6 +26,13 @@ services:
       PORT: "3030"
       NODE_ENV: development
       JWT_SECRET: "dev-secret-local"
+      EMAIL_ENABLED: "${EMAIL_ENABLED:-false}"
+      EMAIL_FROM: "${EMAIL_FROM:-Seciteci Eventos <nao-responder@seciteci.local>}"
+      SMTP_HOST: "${SMTP_HOST:-smtp.gmail.com}"
+      SMTP_PORT: "${SMTP_PORT:-465}"
+      SMTP_SECURE: "${SMTP_SECURE:-true}"
+      SMTP_USER: "${SMTP_USER:-}"
+      SMTP_PASS: "${SMTP_PASS:-}"
     ports:
       - "3030:3030"
     volumes:
