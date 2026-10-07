@@ -55,6 +55,7 @@ COPY --from=builder /app/controllers ./controllers
 COPY --from=builder /app/middleware ./middleware
 COPY --from=builder /app/routes ./routes
 COPY --from=builder /app/docs ./docs
+COPY --from=builder /app/services ./services
 COPY --from=builder /app/server.js ./server.js
 
 # Mudar propriedade dos arquivos
@@ -70,5 +71,5 @@ EXPOSE 80
 ENV NODE_ENV=production
 ENV PORT=80
 
-# Comando de inicialização
-CMD ["node", "server.js"]
+# Comando de inicialização (aplica migrations antes de subir)
+CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
