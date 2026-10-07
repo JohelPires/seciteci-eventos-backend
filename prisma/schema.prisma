@@ -98,6 +98,8 @@ model Evento {
   status               String    @default("rascunho") @db.VarChar(20)
   publicoAlvo          String?   @map("publico_alvo") @db.Text
   requisitos           String?   @db.Text
+  financiadorTipo      String?   @map("financiador_tipo") @db.VarChar(20)
+  financiadorNome      String?   @map("financiador_nome") @db.VarChar(150)
   dataCriacao          DateTime  @default(now()) @map("data_criacao") @db.Timestamp(6)
   dataAtualizacao      DateTime  @updatedAt @map("data_atualizacao") @db.Timestamp(6)
   destaque             Boolean   @default(false)
