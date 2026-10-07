@@ -1,9 +1,4 @@
-const TIMEZONE = 'America/Cuiaba'
-
-const formatarData = (data) =>
-   data
-      ? new Date(data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: TIMEZONE })
-      : 'Nao informado'
+const { formatarData } = require('./helpers')
 
 const eventoCriadoTemplate = ({ usuario, evento }) => {
    const presencial = evento.tipoEvento === 'presencial'
