@@ -9,9 +9,11 @@ REST API for event registration (Seciteci). Node.js + Express + Prisma + Postgre
 - Migrations run automatically on startup (`prisma migrate deploy`). Seed is manual only: `docker compose exec app npm run prisma:seed`.
 - Without Docker: `npm run dev`, but `.env` has `DATABASE_URL` commented out, so it fails until you set one. Inside Docker the compose env wins over `.env` (dotenv does not override existing process vars).
 - Prisma: `npm run prisma:generate | prisma:migrate | prisma:studio | prisma:seed`.
+- Tests: `npm test` (or `npm run test:watch`) on the host, with `docker compose up -d db` running. One-time: `docker compose exec db createdb -U postgres sistema_eventos_test` only needed when pgdata existed before (fresh volumes get it via `db/init-test-db.sql`). Tests use `.env.test` (DB `sistema_eventos_test`) and NEVER touch the dev DB. `NODE_ENV=test` disables rate limit and cache. Suites import `app.js` (supertest), not `server.js`.
+  Adding new deps requires the named volume refresh per the second bullet above.
 
-## No tests / lint / typecheck
-None exist. `teste.js` is scratch algorithm practice, not a test suite — do not run/assume `npm test`.
+## Tests / lint / typecheck
+No lint or typecheck exist. `teste.js` is scratch algorithm practice, not a test suite. Jest suites live in `tests/` (6 suites — sanity, app, auth, eventos, inscricoes, permissoes — 55 tests, run with `npx jest --runInBand`).
 
 ## Architecture
 - `routes/index.js` — single registration point for all routes; add route here, controller in `controllers/`, validation in `middleware/validators.js`.
