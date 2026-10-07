@@ -1,6 +1,8 @@
 node_modules
 npm-debug.log
 .env
+.env.test
+.env.test.example
 .git
 .gitignore
 .vscode
@@ -11,3 +13,8 @@ coverage
 .DS_Store
 *.md
 docker-compose.yml
+.superpowers
+.gitlab
+db
+tests
+jest.config.js

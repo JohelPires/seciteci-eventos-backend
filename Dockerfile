@@ -46,17 +46,9 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
-# Copiar arquivos necessários
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/config ./config
-COPY --from=builder /app/controllers ./controllers
-COPY --from=builder /app/middleware ./middleware
-COPY --from=builder /app/routes ./routes
-COPY --from=builder /app/docs ./docs
-COPY --from=builder /app/services ./services
-COPY --from=builder /app/server.js ./server.js
+# Copiar a aplicação inteira do builder (o contexto de build é
+# enxuto via .dockerignore)
+COPY --from=builder /app ./
 
 # Mudar propriedade dos arquivos
 RUN chown -R nodejs:nodejs /app
