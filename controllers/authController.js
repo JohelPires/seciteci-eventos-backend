@@ -4,8 +4,7 @@ const prisma = require("../config/prisma");
 
 const register = async (req, res) => {
   try {
-    const { nome, email, senha, telefone, cpf, dataNascimento, tipoUsuario } =
-      req.body;
+    const { nome, email, senha, telefone, cpf, dataNascimento } = req.body;
 
     const userExists = await prisma.usuario.findUnique({
       where: { email },
@@ -35,7 +34,7 @@ const register = async (req, res) => {
         telefone,
         cpf,
         dataNascimento: dataNascimento ? new Date(dataNascimento) : null,
-        tipoUsuario: tipoUsuario || "participante",
+        tipoUsuario: "participante",
       },
       select: {
         id: true,

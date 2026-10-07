@@ -197,6 +197,11 @@ const createEvento = async (req, res) => {
          financiadorNome,
       } = req.body
 
+      // Apenas administradores podem criar o evento já publicado;
+      // qualquer outro usuário cria sempre como rascunho.
+      const statusFinal =
+         req.userType === 'admin' ? status || 'rascunho' : 'rascunho'
+
       const evento = await prisma.evento.create({
          data: {
             titulo,
@@ -228,7 +233,7 @@ const createEvento = async (req, res) => {
             LocalLongitude: LocalLongitude ? parseFloat(LocalLongitude) : null,
             LocalObservacoes,
             imagemCapa,
-            status: status || 'rascunho',
+            status: statusFinal,
             publicoAlvo,
             requisitos,
             financiadorTipo,
@@ -315,6 +320,17 @@ const updateEvento = async (req, res) => {
       if (dadosAtualizacao.linkGoogleMaps !== undefined) {
          dadosAtualizacao.LocalLinkGoogleMaps = dadosAtualizacao.linkGoogleMaps
          delete dadosAtualizacao.linkGoogleMaps
+      }
+
+      // Apenas administradores podem publicar eventos
+      if (
+         dadosAtualizacao.status !== undefined &&
+         req.userType !== 'admin' &&
+         dadosAtualizacao.status === 'publicado'
+      ) {
+         return res
+            .status(403)
+            .json({ error: 'Apenas administradores podem publicar eventos' })
       }
 
       const eventoAtualizado = await prisma.evento.update({

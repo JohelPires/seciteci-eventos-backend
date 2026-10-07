@@ -69,13 +69,14 @@
  *                 example: 1990-05-15
  *               tipoUsuario:
  *                 type: string
- *                 enum: [participante, organizador, admin]
+ *                 enum: [participante]
  *                 default: participante
+ *                 description: O cadastro público cria sempre um participante. Promoção a admin é feita via /api/usuarios/{id}/promover.
  *     responses:
  *       201:
- *         description: Usuário cadastrado com sucesso
+ *         description: Usuário cadastrado com sucesso (tipoUsuario sempre participante)
  *       400:
- *         description: Email ou CPF já cadastrado
+ *         description: Email ou CPF já cadastrado, ou tipoUsuario inválido
  */
 
 /**
@@ -261,7 +262,7 @@
  *     tags:
  *       - Eventos
  *     summary: Criar evento
- *     description: Cria um novo evento (apenas organizadores e admins)
+ *     description: Cria um novo evento. Qualquer usuário autenticado pode criar, mas o evento nasce sempre como rascunho; apenas administradores podem criá-lo já como publicado.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -369,6 +370,7 @@
  *                 type: string
  *                 enum: [rascunho, publicado]
  *                 default: rascunho
+ *                 description: Não-admin sempre cria como rascunho, mesmo enviando publicado. Apenas admin pode criar como publicado.
  *               publicoAlvo:
  *                 type: string
  *               requisitos:
@@ -397,7 +399,7 @@
  *     tags:
  *       - Eventos
  *     summary: Atualizar evento
- *     description: Atualiza informações de um evento (apenas organizador ou admin)
+ *     description: Atualiza informações de um evento (dono do evento ou admin). Apenas administradores podem mudar o status para publicado; os demais ficam restritos a rascunho/cancelado/encerrado.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -461,7 +463,7 @@
  *     tags:
  *       - Eventos
  *     summary: Deletar evento
- *     description: Remove um evento (não permite se tiver inscrições)
+ *     description: Remove um evento (apenas o dono do evento ou admin; não permite se tiver inscrições)
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -488,14 +490,14 @@
  *     tags:
  *       - Eventos
  *     summary: Meus eventos
- *     description: Lista eventos criados pelo organizador autenticado
+ *     description: Lista eventos criados pelo usuário autenticado
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Lista de eventos do organizador
- *       403:
- *         description: Apenas organizadores e admins
+ *         description: Lista de eventos do usuário
+ *       401:
+ *         description: Não autenticado
  */
 
 /**
@@ -635,7 +637,7 @@
  *     tags:
  *       - Inscrições
  *     summary: Confirmar presença
- *     description: Confirma presença de participante (apenas organizador ou admin)
+ *     description: Confirma presença de participante (apenas o dono do evento ou admin)
  *     security:
  *       - bearerAuth: []
  *     parameters:

@@ -44,9 +44,9 @@ router.patch('/usuarios/:id/promover', authMiddleware, isAdmin, usuariosControll
 
 // router.post('/eventos', authMiddleware, isOrganizador, eventoValidator, eventosController.createEvento)
 router.post('/eventos', authMiddleware, eventoValidator, eventosController.createEvento)
-router.put('/eventos/:id', authMiddleware, isOrganizador, eventosController.updateEvento)
-router.delete('/eventos/:id', authMiddleware, isOrganizador, eventosController.deleteEvento)
-router.get('/meus-eventos', authMiddleware, isOrganizador, eventosController.getMeusEventos)
+router.put('/eventos/:id', authMiddleware, eventosController.updateEvento)
+router.delete('/eventos/:id', authMiddleware, eventosController.deleteEvento)
+router.get('/meus-eventos', authMiddleware, eventosController.getMeusEventos)
 
 // ===== ROTAS PROTEGIDAS - INSCRIÇÕES =====
 
@@ -55,7 +55,7 @@ router.post('/inscricoes', authMiddleware, inscricaoValidator, inscricoesControl
 router.get('/minhas-inscricoes', authMiddleware, inscricoesController.getMinhasInscricoes)
 router.get('/inscricoes/:id', authMiddleware, inscricoesController.getInscricaoById)
 router.delete('/inscricoes/:id', authMiddleware, inscricoesController.cancelarInscricao)
-router.patch('/inscricoes/:id/presenca', authMiddleware, isOrganizador, inscricoesController.confirmarPresenca)
+router.patch('/inscricoes/:id/presenca', authMiddleware, inscricoesController.confirmarPresenca)
 
 // ===== ROTAS PROTEGIDAS - AVALIAÇÕES =====
 router.post('/avaliacoes', authMiddleware, avaliacoesController.createAvaliacao)
