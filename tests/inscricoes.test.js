@@ -75,6 +75,7 @@ describe('POST /api/inscricoes', () => {
     const res = await inscrever(user, 9999999)
 
     expect(res.statusCode).toBe(404)
+    expect(res.body.error).toBe('Evento não encontrado ou não disponível para inscrição')
   })
 
   test('evento já iniciado -> 400 "eventos já iniciados"', async () => {

@@ -14,13 +14,14 @@ describe('infra de teste', () => {
   })
 
   test('TRUNCATE reseta sequências (RESTART IDENTITY)', async () => {
-    await prisma.usuario.create({
+    const a = await prisma.usuario.create({
       data: { nome: 'A', email: 'a@teste.com', senha: 'x', tipoUsuario: 'participante' },
     })
     await resetDb()
-    await prisma.usuario.create({
+    const b = await prisma.usuario.create({
       data: { nome: 'B', email: 'b@teste.com', senha: 'x', tipoUsuario: 'participante' },
     })
+    expect(b.id).toBe(a.id)
     expect(await prisma.usuario.count()).toBe(1)
   })
 })
