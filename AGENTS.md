@@ -26,8 +26,8 @@ No lint or typecheck exist. `teste.js` is scratch algorithm practice, not a test
 - `docs/swagger.routes.js` documents `/api/eventos/destaque` and `/api/eventos/por-cidade`, but neither is in `routes/index.js`; `getEventosDestaque`/`getEventosPorCidade` in `eventosController.js` are unused. Trust `routes/index.js` over the docs.
 - `eventosController` caches list/detail 24h via `node-cache` (keyed by query, flushes all on write; responses carry a `cache` flag). Stale reads possible after direct DB writes.
 - Prisma fields are camelCase mapped to snake_case via `@map`/`@@map`. `Evento` keeps denormalized `Local*` columns alongside legacy `local`/`Local` relations.
-- Rate limit: 100 req / 3 min per IP on `/api` (`server.js`). Times stored as `@db.Time` via `new Date('1970-01-01T...')`.
+- Rate limit: 100 req / 3 min per IP on `/api` (`app.js`). Times stored as `@db.Time` via `new Date('1970-01-01T...')`.
 
 ## Repo conventions
 - Git primary remote is GitLab (`gitlab.risc.unemat.br/...`); `origin` also pushes to GitHub. Default branch `main`. No CI config.
-- `docs/superpowers/plans|specs/` holds agent plans/specs; `.gitlab/issues_templates/` has issue templates. `.dockerignore` excludes `*.md` and `docker-compose.yml`.
+- `docs/superpowers/plans|specs/` holds agent plans/specs; `.gitlab/issues_templates/` has issue templates. `.dockerignore` excludes `*.md`, `docker-compose.yml`, tests/infra (`tests/`, `jest.config.js`, `db/`, `.env.test{,.example}`, `.superpowers`, `.gitlab`); the prod `Dockerfile` copies the whole builder `/app` into the runner, so a runtime file excluded by `.dockerignore` breaks the image — `tests/deploy.test.js` guards this (runtime `require` graph vs `.dockerignore` + full-copy runner strategy).
