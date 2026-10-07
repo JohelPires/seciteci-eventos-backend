@@ -1,5 +1,6 @@
 const NodeCache = require('node-cache')
 const cache = new NodeCache({ stdTTL: 86400, checkperiod: 3600 }) // TTL = 60s
+const cacheEnabled = () => process.env.NODE_ENV !== 'test'
 
 const prisma = require('../config/prisma')
 const { sendMailSafe } = require('../services/emailService')
@@ -12,7 +13,7 @@ const getEventos = async (req, res) => {
 
       // Criar uma chave única com base nos filtros
       const cacheKey = `eventos:${JSON.stringify(req.query)}`
-      const cachedData = cache.get(cacheKey)
+      const cachedData = cacheEnabled() ? cache.get(cacheKey) : null
 
       if (cachedData) {
          return res.json({ ...cachedData, cache: true }) // mostra se veio do cache
@@ -71,7 +72,9 @@ const getEventos = async (req, res) => {
       }
 
       // Armazenar os dados no cache
-      cache.set(cacheKey, responseData)
+      if (cacheEnabled()) {
+         cache.set(cacheKey, responseData)
+      }
 
       res.json(responseData)
    } catch (error) {
@@ -86,7 +89,7 @@ const getEventoById = async (req, res) => {
 
       // Pegar do cache
       const cacheKey = `evento:${id}`
-      const cachedEvento = cache.get(cacheKey)
+      const cachedEvento = cacheEnabled() ? cache.get(cacheKey) : null
 
       if (cachedEvento) {
          return res.json({ ...cachedEvento, cache: true })
@@ -151,7 +154,9 @@ const getEventoById = async (req, res) => {
       }
 
       // Armazenar os dados no cache
-      cache.set(cacheKey, responseData)
+      if (cacheEnabled()) {
+         cache.set(cacheKey, responseData)
+      }
 
       res.json(responseData)
    } catch (error) {
