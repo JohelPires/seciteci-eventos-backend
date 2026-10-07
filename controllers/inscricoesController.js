@@ -46,7 +46,7 @@ const createInscricao = async (req, res) => {
 
     const codigo = `INS${Date.now()}${Math.random()
       .toString(36)
-      .substr(2, 5)
+      .substr(2, 4)
       .toUpperCase()}`;
 
     const inscricao = await prisma.$transaction(async (tx) => {

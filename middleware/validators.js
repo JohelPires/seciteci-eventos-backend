@@ -14,6 +14,10 @@ const registerValidator = [
   body("senha")
     .isLength({ min: 6 })
     .withMessage("Senha deve ter no mínimo 6 caracteres"),
+  body("tipoUsuario")
+    .optional()
+    .equals("participante")
+    .withMessage("Tipo de usuário inválido no cadastro"),
   validate,
 ];
 
@@ -41,6 +45,10 @@ const eventoValidator = [
     .trim()
     .isLength({ max: 150 })
     .withMessage("Nome do financiador deve ter no máximo 150 caracteres"),
+  body("status")
+    .optional()
+    .isIn(["rascunho", "publicado", "cancelado", "encerrado"])
+    .withMessage("Status de evento inválido"),
   validate,
 ];
 

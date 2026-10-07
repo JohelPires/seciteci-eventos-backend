@@ -10,7 +10,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "node prisma/seed.js",
-    "email:test": "node scripts/sendTestEmail.js"
+    "email:test": "node scripts/sendTestEmail.js",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch --runInBand"
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",
@@ -27,7 +29,9 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "jest": "^30.5.2",
     "nodemon": "^3.0.1",
-    "prisma": "^5.7.0"
+    "prisma": "^5.7.0",
+    "supertest": "^7.3.1"
   }
 }
