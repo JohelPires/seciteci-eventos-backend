@@ -14,7 +14,7 @@ const eventoCriadoTemplate = ({ usuario, evento }) => {
    const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
          <h2 style="color: #2c3e50;">Ola, ${usuario.nome}!</h2>
-         <p>Seu evento foi criado com sucesso na plataforma Seciteci Eventos.</p>
+         <p>Seu evento foi criado com sucesso na plataforma CONECTE-SE.</p>
          <h3 style="color: #2c3e50;">${evento.titulo}</h3>
          <ul>
             <li><strong>Início:</strong> ${formatarData(evento.dataInicio)}</li>
@@ -34,7 +34,7 @@ const eventoCriadoTemplate = ({ usuario, evento }) => {
    const text = [
       `Ola, ${usuario.nome}!`,
       '',
-      'Seu evento foi criado com sucesso na plataforma Seciteci Eventos.',
+      'Seu evento foi criado com sucesso na plataforma CONECTE-SE.',
       '',
       `Evento: ${evento.titulo}`,
       `Inicio: ${formatarData(evento.dataInicio)}`,

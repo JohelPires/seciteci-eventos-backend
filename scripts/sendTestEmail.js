@@ -13,7 +13,7 @@ const main = async () => {
 
    const messageId = await sendEmail({
       to: destinatario,
-      subject: 'Teste do servico de e-mail - Seciteci Eventos',
+      subject: 'Teste do servico de e-mail - CONECTE-SE',
       html: '<p>Se voce recebeu este e-mail, o servico de envio esta funcionando.</p>',
       text: 'Se voce recebeu este e-mail, o servico de envio esta funcionando.',
    })
