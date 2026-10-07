@@ -4,6 +4,7 @@ const cache = new NodeCache({ stdTTL: 86400, checkperiod: 3600 }) // TTL = 60s
 const prisma = require('../config/prisma')
 const { sendMailSafe } = require('../services/emailService')
 const { eventoCriadoTemplate } = require('../services/emailTemplates/eventoCriado')
+const { eventoStatusAlteradoTemplate } = require('../services/emailTemplates/eventoStatusAlterado')
 
 const getEventos = async (req, res) => {
    try {
@@ -332,6 +333,18 @@ const updateEvento = async (req, res) => {
       })
 
       cache.flushAll() // remove todo cache
+
+      if (dadosAtualizacao.status && dadosAtualizacao.status !== evento.status) {
+         sendMailSafe(
+            eventoAtualizado.organizador.email,
+            eventoStatusAlteradoTemplate({
+               usuario: eventoAtualizado.organizador,
+               evento: eventoAtualizado,
+               statusAnterior: evento.status,
+               statusNovo: dadosAtualizacao.status,
+            })
+         )
+      }
 
       res.json({
          message: 'Evento atualizado com sucesso',
