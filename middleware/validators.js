@@ -57,9 +57,23 @@ const inscricaoValidator = [
   validate,
 ];
 
+const alterarSenhaValidator = [
+  body("senhaAtual").notEmpty().withMessage("Senha atual é obrigatória"),
+  body("novaSenha")
+    .isLength({ min: 6 })
+    .withMessage("Nova senha deve ter no mínimo 6 caracteres"),
+  body("novaSenha").custom((valor, { req }) =>
+    valor !== req.body.senhaAtual
+      ? true
+      : Promise.reject("Nova senha deve ser diferente da senha atual")
+  ),
+  validate,
+];
+
 module.exports = {
   registerValidator,
   loginValidator,
   eventoValidator,
   inscricaoValidator,
+  alterarSenhaValidator,
 };

@@ -131,6 +131,46 @@
 
 /**
  * @swagger
+ * /api/auth/senha:
+ *   patch:
+ *     tags:
+ *       - Autenticação
+ *     summary: Alterar senha do usuário autenticado
+ *     description: Altera a senha do próprio usuário, exigindo a senha atual
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - senhaAtual
+ *               - novaSenha
+ *             properties:
+ *               senhaAtual:
+ *                 type: string
+ *                 format: password
+ *                 example: senha123
+ *               novaSenha:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: novaSenha456
+ *     responses:
+ *       200:
+ *         description: Senha alterada com sucesso
+ *       400:
+ *         description: Dados inválidos (nova senha curta ou igual à atual)
+ *       401:
+ *         description: Não autenticado ou senha atual incorreta
+ *       404:
+ *         description: Usuário não encontrado
+ */
+
+/**
+ * @swagger
  * /api/usuarios:
  *   get:
  *     tags:

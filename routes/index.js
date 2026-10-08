@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { authMiddleware, isOrganizador, isAdmin } = require('../middleware/auth')
-const { registerValidator, loginValidator, eventoValidator, inscricaoValidator } = require('../middleware/validators')
+const { registerValidator, loginValidator, eventoValidator, inscricaoValidator, alterarSenhaValidator } = require('../middleware/validators')
 
 const authController = require('../controllers/authController')
 const eventosController = require('../controllers/eventosController')
@@ -35,6 +35,8 @@ router.get('/eventos/:eventoId/avaliacoes', avaliacoesController.getAvaliacoesEv
 
 // ===== ROTAS PROTEGIDAS - USUÁRIOS =====
 router.get('/auth/profile', authMiddleware, authController.getProfile)
+
+router.patch('/auth/senha', authMiddleware, alterarSenhaValidator, authController.alterarSenha)
 
 router.get('/usuarios', authMiddleware, isAdmin, usuariosController.getUsuarios)
 

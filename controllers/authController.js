@@ -128,4 +128,36 @@ const getProfile = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile };
+const alterarSenha = async (req, res) => {
+  try {
+    const { senhaAtual, novaSenha } = req.body;
+
+    const user = await prisma.usuario.findUnique({
+      where: { id: req.userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "Usuário não encontrado" });
+    }
+
+    const validPassword = await bcrypt.compare(senhaAtual, user.senha);
+
+    if (!validPassword) {
+      return res.status(401).json({ error: "Senha atual incorreta" });
+    }
+
+    const hashedPassword = await bcrypt.hash(novaSenha, 10);
+
+    await prisma.usuario.update({
+      where: { id: user.id },
+      data: { senha: hashedPassword },
+    });
+
+    res.json({ message: "Senha alterada com sucesso" });
+  } catch (error) {
+    console.error("Erro ao alterar senha:", error);
+    res.status(500).json({ error: "Erro ao alterar senha" });
+  }
+};
+
+module.exports = { register, login, getProfile, alterarSenha };

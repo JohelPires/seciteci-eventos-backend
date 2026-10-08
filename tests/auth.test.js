@@ -131,3 +131,70 @@ describe('GET /api/auth/profile', () => {
     expect(res.body.error).toBe('Token não fornecido')
   })
 })
+
+describe('PATCH /api/auth/senha', () => {
+  test('altera a senha e permite login com a nova (200)', async () => {
+    const user = await createUser({ email: 'troca@teste.com' })
+    const hashAntes = (await prisma.usuario.findUnique({ where: { id: user.id } })).senha
+
+    const res = await request(app)
+      .patch('/api/auth/senha')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+      .send({ senhaAtual: user.senhaPlano, novaSenha: 'novaSenha456' })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.message).toBe('Senha alterada com sucesso')
+
+    const hashDepois = (await prisma.usuario.findUnique({ where: { id: user.id } })).senha
+    expect(hashDepois).not.toBe(hashAntes)
+
+    const login = await request(app)
+      .post('/api/auth/login')
+      .send({ email: user.email, senha: 'novaSenha456' })
+    expect(login.statusCode).toBe(200)
+  })
+
+  test('senha atual incorreta -> 401', async () => {
+    const user = await createUser({ email: 'errada2@teste.com' })
+
+    const res = await request(app)
+      .patch('/api/auth/senha')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+      .send({ senhaAtual: 'senhaErrada', novaSenha: 'novaSenha456' })
+
+    expect(res.statusCode).toBe(401)
+    expect(res.body.error).toBe('Senha atual incorreta')
+  })
+
+  test('nova senha curta -> 400', async () => {
+    const user = await createUser({ email: 'curta@teste.com' })
+
+    const res = await request(app)
+      .patch('/api/auth/senha')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+      .send({ senhaAtual: user.senhaPlano, novaSenha: '123' })
+
+    expect(res.statusCode).toBe(400)
+    expect(Array.isArray(res.body.errors)).toBe(true)
+  })
+
+  test('nova senha igual à atual -> 400', async () => {
+    const user = await createUser({ email: 'igual@teste.com' })
+
+    const res = await request(app)
+      .patch('/api/auth/senha')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+      .send({ senhaAtual: user.senhaPlano, novaSenha: user.senhaPlano })
+
+    expect(res.statusCode).toBe(400)
+    expect(Array.isArray(res.body.errors)).toBe(true)
+  })
+
+  test('sem token -> 401', async () => {
+    const res = await request(app)
+      .patch('/api/auth/senha')
+      .send({ senhaAtual: 'qualquer', novaSenha: 'novaSenha456' })
+
+    expect(res.statusCode).toBe(401)
+  })
+})
