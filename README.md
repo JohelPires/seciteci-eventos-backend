@@ -39,3 +39,18 @@ docker compose exec app npm run prisma:studio
 As migrations são aplicadas automaticamente ao subir (`prisma migrate deploy`).
 Credenciais do Postgres local ficam definidas no `docker-compose.yml`; o `.env`
 local não é usado pelo ambiente Docker.
+
+## Produção (VM Seciteci)
+
+A API é publicada automaticamente a cada push na `main` pela convenção
+CI/CD de [`fic_dev/secitec-servidor`](https://gitlab.risc.unemat.br/fic_dev/secitec-servidor)
+(runner `secitec-vps` na VM, template `gitlab/deploy.gitlab-ci.yml`, Traefik):
+
+- URL: `https://apps.risc.unemat.br/dev/secitec/conectese-api`
+- Health: `https://apps.risc.unemat.br/dev/secitec/conectese-api/health`
+- Swagger: `https://apps.risc.unemat.br/dev/secitec/conectese-api/api-docs`
+
+Segredos vivem no GitLab (variável `APP_ENV`, tipo File, escopo `producao`);
+nada secreto entra no repo. O banco (`sistema_eventos`, Postgres próprio do
+`compose.yml`) é criado na primeira publicação; migrations rodam no boot do
+container. Rollback: re-executar a pipeline de um commit anterior.
