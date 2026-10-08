@@ -1,0 +1,42 @@
+# Publicação automática na VM da SECITECI pelo modelo de CI do grupo
+# (fic_dev/secitec-servidor — README explica a convenção inteira).
+#
+# Fluxo: push/merge na `main` (protegida) → pipeline → `publicar:producao`
+# roda SEM botão → runner `secitec-vps` (shell, na VM) builda a imagem,
+# copia o compose.yml e escreve o /opt/apps/conectese-api/prod/.env, sobe
+# com `docker compose up -d --wait` e espera healthcheck /health.
+#
+# Pré-requisitos (uma vez): branch `main` protegida e a variável APP_ENV
+# (tipo File) no escopo `producao` — sem ela o job para com mensagem clara.
+# Endereço da API: https://apps.risc.unemat.br/dev/secitec/conectese-api
+
+include:
+  - project: 'fic_dev/secitec-servidor'
+    file: 'gitlab/deploy.gitlab-ci.yml'
+
+variables:
+  # O <app> do endereço e das pastas /opt/apps/conectese-api/prod.
+  APP: conectese-api
+
+# Deploy AUTOMÁTICO: o modelo deixa produção como manual (`when: manual`
+# em .ambiente:producao). Uma definição local de MESMO NOME sobrescreve a
+# do template — `extends` reaplica o corpo do job e as variáveis da
+# convenção (APP_CAMINHO, HOST_PUBLICO, COMPOSE_ARQUIVO, etc.), e a regra
+# local troca apenas o gatilho. resource_group do `.publicar-na-vm`
+# (conectese-api-prod) continua garantindo um deploy por vez.
+publicar:producao:
+  extends: [.publicar-na-vm, .ambiente:producao]
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# Seed do banco de produção (uma vez, botão): categorias + usuários base
+# (admin/organizador com senha padrão "admin123" — trocar senha após o
+# primeiro login). Depende do `publicar:producao` já ter rodado.
+seed:producao:
+  stage: deploy
+  tags: [secitec-vps]
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+  script:
+    - docker compose -p conectese-api-prod -f /opt/apps/conectese-api/prod/compose.yml exec -T app npm run prisma:seed

@@ -1,5 +1,7 @@
 # Design: Deploy na VM Seciteci via GitLab CI/CD
 
+> **⚠️ SUPERSEDIDO** por `2026-10-08-deploy-vm-secitec-design.md` — a descoberta da convenção oficial `fic_dev/secitec-servidor` (runner shell já na VM, template de CI, Traefik, Postgres compartilhado) invalidou o bootstrap por VPN/SSH e o compose/CI customizados aqui descritos.
+
 **Data:** 2026-10-08
 **Status:** Aprovado pelo usuário
 

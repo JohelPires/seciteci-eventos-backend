@@ -1,5 +1,7 @@
 # Deploy na VM Seciteci via GitLab CI/CD — Plano de Implementação
 
+> **⚠️ SUPERSEDIDO** por `docs/superpowers/specs/2026-10-08-deploy-vm-secitec-design.md` — a implementação real seguiu a convenção `fic_dev/secitec-servidor` (sem VPN/SSH; Tasks 4–7 e o compose/CI custom deste plano foram abandonados). Histórico preservado para referência.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Deploy automático (backend + Postgres) na VM `192.168.30.149` via `docker compose`, disparado por push na `main` com pipeline GitLab (test → deploy) e GitLab Runner shell instalado na própria VM.

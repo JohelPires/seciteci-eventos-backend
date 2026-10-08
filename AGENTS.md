@@ -21,12 +21,19 @@ No lint or typecheck exist. `teste.js` is scratch algorithm practice, not a test
 - `config/prisma.js` shared client; `config/swagger.js` loads spec from `./docs/*.js`.
 - Roles: `participante`, `organizador`, `admin`; register accepts client-supplied `tipoUsuario`.
 
-## Gotchas
+## Deploy (produção - VM Seciteci)
+- Convenção `fic_dev/secitec-servidor` (readme do projeto 735): runner **`secitec-vps`** (shell, na VM, tag `secitec-vps`, **Protected** — só branches protegidas), template `gitlab/deploy.gitlab-ci.yml` incluído no `.gitlab-ci.yml`, URL pública `https://apps.risc.unemat.br/dev/secitec/conectese-api` (Traefik tira o prefixo antes da API).
+- **Push na `main` (protegida) sobe automaticamente** (`publicar:producao` com rules override; o template deixaria manual). Rollback: re-run da pipeline de um commit anterior.
+- Segredos: variável **`APP_ENV`** (tipo **File**, escopo `producao`) no GitLab — conteúdo é o `.env` do ambiente (DATABASE_URL do Postgres próprio, JWT_SECRET, SMTP…). Nada secreto no repo.
+- Banco: Postgres **próprio** declarado no `compose.yml` (banco `sistema_eventos` criado pelo compose, senha via `APP_ENV`); **sem backup automático** (follow-up pendente). Migrations rodam no boot do container (`Dockerfile` CMD).
+- Na VM, só existem `/opt/apps/conectese-api/prod/{compose.yml,.env}` — o código nunca vai para lá; a imagem é buildada no runner. Logs: `docker compose logs` via admin/RISC (sem acesso SSH do dev).
 - Swagger is hand-written in `docs/swagger.routes.js`, not generated. Update it manually when endpoints change.
 - `docs/swagger.routes.js` documents `/api/eventos/destaque` and `/api/eventos/por-cidade`, but neither is in `routes/index.js`; `getEventosDestaque`/`getEventosPorCidade` in `eventosController.js` are unused. Trust `routes/index.js` over the docs.
 - `eventosController` caches list/detail 24h via `node-cache` (keyed by query, flushes all on write; responses carry a `cache` flag). Stale reads possible after direct DB writes.
 - Prisma fields are camelCase mapped to snake_case via `@map`/`@@map`. `Evento` keeps denormalized `Local*` columns alongside legacy `local`/`Local` relations.
 - Rate limit: 100 req / 3 min per IP on `/api` (`app.js`). Times stored as `@db.Time` via `new Date('1970-01-01T...')`.
+
+## Gotchas
 
 ## Repo conventions
 - Git primary remote is GitLab (`gitlab.risc.unemat.br/...`); `origin` also pushes to GitHub. Default branch `main`. No CI config.
