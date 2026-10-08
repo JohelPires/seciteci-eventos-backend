@@ -11,21 +11,24 @@ test:
   tags: [seciteci-vm]
   timeout: 15m
   resource_group: ci-tests-vm
-  cache:
-    key:
-      files:
-        - package-lock.json
-    paths:
-      - node_modules/
   script:
     - docker rm -f ci-pg-test || true
     - docker run -d --name ci-pg-test
+        --health-cmd "pg_isready -U postgres -d sistema_eventos"
+        --health-interval 5s --health-timeout 5s --health-retries 12
         -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=sistema_eventos
         -p "127.0.0.1:${TEST_PG_HOST_PORT}":5432
         -v "$CI_PROJECT_DIR/db/init-test-db.sql":/docker-entrypoint-initdb.d/01-init.sql:ro
         postgres:16-alpine
     - |
+      attempt=0
       until [ "$(docker inspect --format '{{.State.Health.Status}}' ci-pg-test 2>/dev/null || echo starting)" = "healthy" ]; do
+        attempt=$((attempt + 1))
+        if [ "$attempt" -ge 60 ]; then
+          echo "postgres não ficou healthy"
+          docker logs ci-pg-test
+          exit 1
+        fi
         sleep 2
       done
     - |
@@ -51,7 +54,7 @@ deploy:
       docker compose -f docker-compose.prod.yml up -d --build --wait --wait-timeout 180
       || (docker compose -f docker-compose.prod.yml logs --tail 100 && exit 1)
     - docker image prune -f
-    - curl -fsS "http://127.0.0.1:${APP_HOST_PORT}/health"
+    - curl -fsS --max-time 10 "http://127.0.0.1:${APP_HOST_PORT}/health"
 
 seed:
   stage: deploy
