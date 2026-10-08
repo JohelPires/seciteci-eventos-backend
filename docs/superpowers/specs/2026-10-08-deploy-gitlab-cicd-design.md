@@ -36,8 +36,8 @@ com deploy automático disparado por push na `main` do GitLab
    senhas, SMTP. Nada secreto entra no repositório.
 4. **`docker-compose.prod.yml` novo** usando o `Dockerfile` de produção; o
    compose de dev continua intacto.
-5. **Gatilho:** push na `main`; testes rodam no pipeline (sem travar o deploy
-   por enquanto — resultado reportado, deploy segue no estágio seguinte).
+5. **Gatilho:** push na `main`; o deploy só roda **se os testes passarem**
+   (estágio `test` antes de `deploy`).
 
 ## Arquitetura
 
@@ -106,8 +106,8 @@ compose as resolve via `${VAR}` — mesmo mecanismo do compose dev.
   `restart: unless-stopped`; `command` do Dockerfile já faz
   `prisma migrate deploy && node server.js`; `depends_on: db healthy`;
   `ports: "${APP_HOST_PORT}:80"`; variáveis `DATABASE_URL` (aponta para `db`),
-  `PORT=80`, `NODE_ENV=production`, `JWT_SECRET`,EMAIL`/`SMTP_*` — todas de CI
-  variables. Sem bind-mount, sem nodemon.
+  `PORT=80`, `NODE_ENV=production`, `JWT_SECRET`, `EMAIL_*` e `SMTP_*` — todas
+  vindas de CI variables. Sem bind-mount, sem nodemon.
 
 ### 4. `.gitlab-ci.yml` (novo)
 
@@ -144,8 +144,8 @@ deploy:          # tag seciteci-vm, only main, resource_group deploy-vm
 3. `deploy` (mesma VM, isolado por resource_group):
    build da imagem (cache de camadas no runner), `up -d`, migrations rodam
    dentro do `command` do `app`, healthcheck final.
-4. Rollback: re-run do pipeline de um commit anterior (a redeestrutura
-   recomputa `up -d --build`); dados preservados no volume `pgdata`.
+4. Rollback: re-run do pipeline de um commit anterior (o `up -d --build`
+   recria os serviços); dados preservados no volume `pgdata`.
 
 ## Validação
 
