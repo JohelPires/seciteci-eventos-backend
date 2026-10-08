@@ -4,10 +4,15 @@ const prisma = require('./config/prisma')
 const { verifyMailer } = require('./config/mailer')
 
 const PORT = process.env.PORT || 3000
+// URL logada: ciente do caminho público na VM Seciteci (APP_CAMINHO/APP_HOST
+// via .env do ambiente; ver config/app.js).
+const APP_CAMINHO = (process.env.APP_CAMINHO || '').replace(/\/+$/, '')
 const URL =
-   process.env.NODE_ENV === 'development'
-      ? `http://localhost:${PORT}`
-      : 'https://seciteci-seciteci-eventos.qmono1.easypanel.host'
+   process.env.APP_HOST && APP_CAMINHO
+      ? `https://${process.env.APP_HOST}${APP_CAMINHO}`
+      : process.env.NODE_ENV === 'development'
+         ? `http://localhost:${PORT}`
+         : 'https://seciteci-seciteci-eventos.qmono1.easypanel.host'
 
 process.on('SIGINT', async () => {
    console.log('\n🔴 Encerrando servidor...')

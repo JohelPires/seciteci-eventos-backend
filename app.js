@@ -8,10 +8,16 @@ const routes = require('./routes')
 
 const app = express()
 const PORT = process.env.PORT || 3000
+// Publicação na VM da SECITECI (convenção secitec-servidor): opipeline
+// grava APP_CAMINHO (ex.: /dev/secitec/conectese-api) no .env do ambiente;
+// o prefixo público é retirado pelo Traefik antes de chegar aqui.
+const APP_CAMINHO = (process.env.APP_CAMINHO || '').replace(/\/+$/, '')
 const URL =
-   process.env.NODE_ENV === 'development'
-      ? `http://localhost:${PORT}`
-      : 'https://seciteci-seciteci-eventos.qmono1.easypanel.host'
+   process.env.APP_HOST && APP_CAMINHO
+      ? `https://${process.env.APP_HOST}${APP_CAMINHO}`
+      : process.env.NODE_ENV === 'development'
+         ? `http://localhost:${PORT}`
+         : 'https://seciteci-seciteci-eventos.qmono1.easypanel.host'
 
 app.set('trust proxy', 1)
 
@@ -24,6 +30,16 @@ const limiter = rateLimit({
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+
+// Atrás do proxy por caminho (Traefik stripprefix), o redirect interno do
+// swagger-ui (express.static) produziaria Location '/api-docs/' absoluto,
+// perdendo o prefixo publico. Intercepta e redireciona com X-Forwarded-Prefix;
+// sem o header (local/teste), segue o comportamento original do swagger-ui.
+app.get('/api-docs', (req, res, next) => {
+   const prefix = req.get('X-Forwarded-Prefix')
+   if (!prefix) return next()
+   res.redirect(302, `${prefix.replace(/\/+$/, '')}/api-docs/`)
+})
 
 app.use(
    '/api-docs',
