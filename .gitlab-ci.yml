@@ -1,66 +1,30 @@
-stages:
-  - test
-  - deploy
+# Publicação automática na VM da SECITECI pelo modelo de CI do grupo
+# (fic_dev/secitec-servidor — README explica a convenção inteira).
+#
+# Fluxo: push/merge na `main` (protegida) → pipeline → `publicar:producao`
+# roda SEM botão → runner `secitec-vps` (shell, na VM) builda a imagem,
+# copia o compose.yml e escreve o /opt/apps/conectese-api/prod/.env, sobe
+# com `docker compose up -d --wait` e espera healthcheck /health.
+#
+# Pré-requisitos (uma vez): branch `main` protegida e a variável APP_ENV
+# (tipo File) no escopo `producao` — sem ela o job para com mensagem clara.
+# Endereço da API: https://apps.risc.unemat.br/dev/secitec/conectese-api
+
+include:
+  - project: 'fic_dev/secitec-servidor'
+    file: 'gitlab/deploy.gitlab-ci.yml'
 
 variables:
-  APP_HOST_PORT: "3030"
-  TEST_PG_HOST_PORT: "5433"
+  # O <app> do endereço e das pastas /opt/apps/conectese-api/prod.
+  APP: conectese-api
 
-test:
-  stage: test
-  tags: [seciteci-vm]
-  timeout: 15m
-  resource_group: ci-tests-vm
-  script:
-    - docker rm -f ci-pg-test || true
-    - docker run -d --name ci-pg-test
-        --health-cmd "pg_isready -U postgres -d sistema_eventos"
-        --health-interval 5s --health-timeout 5s --health-retries 12
-        -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=sistema_eventos
-        -p "127.0.0.1:${TEST_PG_HOST_PORT}":5432
-        -v "$CI_PROJECT_DIR/db/init-test-db.sql":/docker-entrypoint-initdb.d/01-init.sql:ro
-        postgres:16-alpine
-    - |
-      attempt=0
-      until [ "$(docker inspect --format '{{.State.Health.Status}}' ci-pg-test 2>/dev/null || echo starting)" = "healthy" ]; do
-        attempt=$((attempt + 1))
-        if [ "$attempt" -ge 60 ]; then
-          echo "postgres não ficou healthy"
-          docker logs ci-pg-test
-          exit 1
-        fi
-        sleep 2
-      done
-    - |
-      cat > .env.test <<EOF
-      DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:${TEST_PG_HOST_PORT}/sistema_eventos_test?schema=public
-      NODE_ENV=test
-      JWT_SECRET=test-secret
-      EMAIL_ENABLED=false
-      EOF
-    - npm ci
-    - npm test
-  after_script:
-    - docker rm -f ci-pg-test || true
-
-deploy:
-  stage: deploy
-  tags: [seciteci-vm]
+# Deploy AUTOMÁTICO: o modelo deixa produção como manual (`when: manual`
+# em .ambiente:producao). Uma definição local de MESMO NOME sobrescreve a
+# do template — `extends` reaplica o corpo do job e as variáveis da
+# convenção (APP_CAMINHO, HOST_PUBLICO, COMPOSE_ARQUIVO, etc.), e a regra
+# local troca apenas o gatilho. resource_group do `.publicar-na-vm`
+# (conectese-api-prod) continua garantindo um deploy por vez.
+publicar:producao:
+  extends: [.publicar-na-vm, .ambiente:producao]
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-  resource_group: deploy-vm-seciteci
-  script:
-    - >
-      docker compose -f docker-compose.prod.yml up -d --build --wait --wait-timeout 180
-      || (docker compose -f docker-compose.prod.yml logs --tail 100 && exit 1)
-    - docker image prune -f
-    - curl -fsS --max-time 10 "http://127.0.0.1:${APP_HOST_PORT}/health"
-
-seed:
-  stage: deploy
-  tags: [seciteci-vm]
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: manual
-  script:
-    - docker compose -f docker-compose.prod.yml exec -T app npm run prisma:seed
+    - if: $CI_COMMIT_BRANCH == "main"

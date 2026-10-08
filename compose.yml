@@ -1,0 +1,69 @@
+# compose.yml — publicação da API na VM da SECITECI (secitec.risc.lan).
+# Segue a convenção de fic_dev/secitec-servidor (modelos/compose.exemplo.yml),
+# com UMA diferença consciente: em vez do Postgres compartilhado (rede
+# infra-db), declara um serviço `db` PRÓPRIO deste projeto — o banco é criado
+# pelo próprio compose na primeira subida (POSTGRES_DB/POSTGRES_PASSWORD vêm
+# do APP_ENV). Compensa com `mem_limit` (a VM tem 3,8 GB) e fica SEM o backup
+# diário automático do Postgres compartilhado (ver spec de deploy).
+#
+# Quem usa: o job `publicar:producao` do modelo de CI (.gitlab-ci.yml →
+# include de secitec-servidor), que copia este arquivo para
+# /opt/apps/conectese-api/prod/compose.yml e escreve o .env ao lado
+# (a variável APP_ENV do GitLab + IMAGEM, IMAGEM_TAG, APP_HOST, APP_CAMINHO e
+# COMPOSE_PROJECT_NAME). O NOME DO PROJETO vem do .env (COMPOSE_PROJECT_NAME):
+# NÃO declare um `name:` here nem no projeto — os labels do Traefik usam
+# ${COMPOSE_PROJECT_NAME}_default e precisam bater com a rede criada.
+services:
+  app:
+    image: ${IMAGEM}:${IMAGEM_TAG}
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      # O Traefik (no host) chega ao container pela rede própria do projeto.
+      - traefik.docker.network=${COMPOSE_PROJECT_NAME}_default
+      # Roteamento por caminho: o caminho EXATO ou o caminho + "/…", com o
+      # prefixo RETIRADO antes de chegar à aplicação (ela recebe /, /health…).
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${APP_HOST}`) && (Path(`${APP_CAMINHO}`) || PathPrefix(`${APP_CAMINHO}/`))
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=web
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}-sem-prefixo
+      - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}-sem-prefixo.stripprefix.prefixes=${APP_CAMINHO}
+      # A porta em que a API escuta DENTRO do container (Dockerfile: PORT=80).
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:80/health >/dev/null || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # A VM tem 3,8 GB para tudo: teto de memória em todo serviço.
+    mem_limit: 512m
+    # Tempo para terminar o que está em curso (e-mail saindo) antes do SIGKILL.
+    stop_grace_period: 15s
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: sistema_eventos
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d sistema_eventos']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    mem_limit: 512m
+    # O provider docker do Traefik expõe todo container por padrão: o banco
+    # nunca entra no roteamento.
+    labels:
+      - traefik.enable=false
+
+volumes:
+  pgdata:
