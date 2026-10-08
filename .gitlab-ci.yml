@@ -28,3 +28,15 @@ publicar:producao:
   extends: [.publicar-na-vm, .ambiente:producao]
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
+
+# Seed do banco de produção (uma vez, botão): categorias + usuários base
+# (admin/organizador com senha padrão "admin123" — trocar senha após o
+# primeiro login). Depende do `publicar:producao` já ter rodado.
+seed:producao:
+  stage: deploy
+  tags: [secitec-vps]
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+  script:
+    - docker compose -p conectese-api-prod -f /opt/apps/conectese-api/prod/compose.yml exec -T app npm run prisma:seed
