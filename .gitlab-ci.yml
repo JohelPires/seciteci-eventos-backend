@@ -1,0 +1,63 @@
+stages:
+  - test
+  - deploy
+
+variables:
+  APP_HOST_PORT: "3030"
+  TEST_PG_HOST_PORT: "5433"
+
+test:
+  stage: test
+  tags: [seciteci-vm]
+  timeout: 15m
+  resource_group: ci-tests-vm
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules/
+  script:
+    - docker rm -f ci-pg-test || true
+    - docker run -d --name ci-pg-test
+        -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=sistema_eventos
+        -p "127.0.0.1:${TEST_PG_HOST_PORT}":5432
+        -v "$CI_PROJECT_DIR/db/init-test-db.sql":/docker-entrypoint-initdb.d/01-init.sql:ro
+        postgres:16-alpine
+    - |
+      until [ "$(docker inspect --format '{{.State.Health.Status}}' ci-pg-test 2>/dev/null || echo starting)" = "healthy" ]; do
+        sleep 2
+      done
+    - |
+      cat > .env.test <<EOF
+      DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:${TEST_PG_HOST_PORT}/sistema_eventos_test?schema=public
+      NODE_ENV=test
+      JWT_SECRET=test-secret
+      EMAIL_ENABLED=false
+      EOF
+    - npm ci
+    - npm test
+  after_script:
+    - docker rm -f ci-pg-test || true
+
+deploy:
+  stage: deploy
+  tags: [seciteci-vm]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  resource_group: deploy-vm-seciteci
+  script:
+    - >
+      docker compose -f docker-compose.prod.yml up -d --build --wait --wait-timeout 180
+      || (docker compose -f docker-compose.prod.yml logs --tail 100 && exit 1)
+    - docker image prune -f
+    - curl -fsS "http://127.0.0.1:${APP_HOST_PORT}/health"
+
+seed:
+  stage: deploy
+  tags: [seciteci-vm]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+  script:
+    - docker compose -f docker-compose.prod.yml exec -T app npm run prisma:seed
