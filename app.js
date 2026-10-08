@@ -37,7 +37,9 @@ app.use(express.urlencoded({ extended: true }))
 // sem o header (local/teste), segue o comportamento original do swagger-ui.
 app.get('/api-docs', (req, res, next) => {
    const prefix = req.get('X-Forwarded-Prefix')
-   if (!prefix) return next()
+   // Só o caminho EXATO (sem barra) redireciona: swagger-ui atende
+   // '/api-docs/' — e Express sem strict routing casa ambos com esta rota.
+   if (!prefix || req.path !== '/api-docs') return next()
    res.redirect(302, `${prefix.replace(/\/+$/, '')}/api-docs/`)
 })
 
