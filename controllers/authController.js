@@ -1,6 +1,12 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const prisma = require("../config/prisma");
+const { sendMailSafe, isEmailEnabled } = require("../services/emailService");
+const { resetSenhaTemplate } = require("../services/emailTemplates/resetSenha");
+
+const CODIGO_TTL_MINUTOS = 15;
+const MAX_TENTATIVAS_RESET = 5;
 
 const register = async (req, res) => {
   try {
@@ -160,4 +166,36 @@ const alterarSenha = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile, alterarSenha };
+const esqueciSenha = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await prisma.usuario.findUnique({
+      where: { email, ativo: true },
+    });
+
+    if (user) {
+      const codigo = crypto.randomInt(0, 1000000).toString().padStart(6, "0");
+      const resetCodigo = await bcrypt.hash(codigo, 10);
+      const resetExpira = new Date(Date.now() + CODIGO_TTL_MINUTOS * 60 * 1000);
+
+      await prisma.usuario.update({
+        where: { id: user.id },
+        data: { resetCodigo, resetExpira, resetTentativas: 0 },
+      });
+
+      if (isEmailEnabled()) {
+        sendMailSafe(user.email, resetSenhaTemplate({ usuario: user, codigo }));
+      } else {
+        console.log(`[reset-senha] Codigo para ${user.email}: ${codigo}`);
+      }
+    }
+
+    res.json({ message: "Se o e-mail existir, enviaremos um código" });
+  } catch (error) {
+    console.error("Erro ao solicitar reset de senha:", error);
+    res.status(500).json({ error: "Erro ao solicitar redefinição de senha" });
+  }
+};
+
+module.exports = { register, login, getProfile, alterarSenha, esqueciSenha };

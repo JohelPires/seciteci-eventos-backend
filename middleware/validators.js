@@ -70,10 +70,31 @@ const alterarSenhaValidator = [
   validate,
 ];
 
+const esqueciSenhaValidator = [
+  body("email").isEmail().withMessage("Email inválido"),
+  validate,
+];
+
+const redefinirSenhaValidator = [
+  body("email").isEmail().withMessage("Email inválido"),
+  body("codigo")
+    .trim()
+    .isLength({ min: 6, max: 6 })
+    .withMessage("Código deve ter 6 dígitos")
+    .isNumeric()
+    .withMessage("Código inválido"),
+  body("novaSenha")
+    .isLength({ min: 6 })
+    .withMessage("Nova senha deve ter no mínimo 6 caracteres"),
+  validate,
+];
+
 module.exports = {
   registerValidator,
   loginValidator,
   eventoValidator,
   inscricaoValidator,
   alterarSenhaValidator,
+  esqueciSenhaValidator,
+  redefinirSenhaValidator,
 };

@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { authMiddleware, isOrganizador, isAdmin } = require('../middleware/auth')
-const { registerValidator, loginValidator, eventoValidator, inscricaoValidator, alterarSenhaValidator } = require('../middleware/validators')
+const { registerValidator, loginValidator, eventoValidator, inscricaoValidator, alterarSenhaValidator, esqueciSenhaValidator, redefinirSenhaValidator } = require('../middleware/validators')
 
 const authController = require('../controllers/authController')
 const eventosController = require('../controllers/eventosController')
@@ -17,6 +17,8 @@ const usuariosController = require('../controllers/usuariosController')
 router.post('/auth/register', registerValidator, authController.register)
 
 router.post('/auth/login', loginValidator, authController.login)
+
+router.post('/auth/esqueci-senha', esqueciSenhaValidator, authController.esqueciSenha)
 
 // Eventos públicos
 
