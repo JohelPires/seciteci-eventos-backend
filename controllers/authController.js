@@ -154,12 +154,18 @@ const alterarSenha = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(novaSenha, 10);
 
-    await prisma.usuario.update({
+    const updated = await prisma.usuario.update({
       where: { id: user.id },
-      data: { senha: hashedPassword },
+      data: { senha: hashedPassword, tokenVersion: { increment: 1 } },
     });
 
-    res.json({ message: "Senha alterada com sucesso" });
+    const token = jwt.sign(
+      { id: updated.id, tipo: updated.tipoUsuario, v: updated.tokenVersion },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({ message: "Senha alterada com sucesso", token });
   } catch (error) {
     console.error("Erro ao alterar senha:", error);
     res.status(500).json({ error: "Erro ao alterar senha" });

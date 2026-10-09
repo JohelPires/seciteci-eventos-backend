@@ -197,4 +197,36 @@ describe('PATCH /api/auth/senha', () => {
 
     expect(res.statusCode).toBe(401)
   })
+
+  test('retorna token novo que continua valido', async () => {
+    const user = await createUser({ email: 'novotoken@teste.com' })
+
+    const res = await request(app)
+      .patch('/api/auth/senha')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+      .send({ senhaAtual: user.senhaPlano, novaSenha: 'novaSenha456' })
+
+    expect(res.statusCode).toBe(200)
+    expect(typeof res.body.token).toBe('string')
+
+    const perfil = await request(app)
+      .get('/api/auth/profile')
+      .set('Authorization', `Bearer ${res.body.token}`)
+    expect(perfil.statusCode).toBe(200)
+  })
+
+  test('token antigo eh invalidado apos a troca', async () => {
+    const user = await createUser({ email: 'antigoinvalido@teste.com' })
+    const tokenAntigo = tokenFor(user)
+
+    await request(app)
+      .patch('/api/auth/senha')
+      .set('Authorization', `Bearer ${tokenAntigo}`)
+      .send({ senhaAtual: user.senhaPlano, novaSenha: 'novaSenha456' })
+
+    const res = await request(app)
+      .get('/api/auth/profile')
+      .set('Authorization', `Bearer ${tokenAntigo}`)
+    expect(res.statusCode).toBe(401)
+  })
 })
