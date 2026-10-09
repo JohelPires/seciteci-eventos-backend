@@ -171,6 +171,78 @@
 
 /**
  * @swagger
+ * /api/auth/esqueci-senha:
+ *   post:
+ *     tags:
+ *       - Autenticação
+ *     summary: Solicitar código de recuperação de senha
+ *     description: >
+ *       Envia um código numérico de 6 dígitos (válido por 15 minutos) caso o
+ *       e-mail esteja cadastrado. A resposta é sempre genérica (HTTP 200) para
+ *       não revelar quais e-mails existem.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: usuario@email.com
+ *     responses:
+ *       200:
+ *         description: Solicitação recebida (resposta genérica)
+ *       400:
+ *         description: E-mail inválido
+ */
+
+/**
+ * @swagger
+ * /api/auth/redefinir-senha:
+ *   post:
+ *     tags:
+ *       - Autenticação
+ *     summary: Redefinir senha com código
+ *     description: >
+ *       Valida o código de 6 dígitos e define uma nova senha. Máximo de 5
+ *       tentativas; ao exceder, o código é invalidado. A troca invalida os
+ *       tokens JWT emitidos anteriormente.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - codigo
+ *               - novaSenha
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: usuario@email.com
+ *               codigo:
+ *                 type: string
+ *                 example: "123456"
+ *               novaSenha:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: novaSenha456
+ *     responses:
+ *       200:
+ *         description: Senha redefinida com sucesso
+ *       400:
+ *         description: Dados inválidos ou código inválido/expirado
+ */
+
+/**
+ * @swagger
  * /api/usuarios:
  *   get:
  *     tags:
