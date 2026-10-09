@@ -1,19 +1,37 @@
 const jwt = require("jsonwebtoken");
+const prisma = require("../config/prisma");
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {
     return res.status(401).json({ error: "Token não fornecido" });
   }
 
+  let decoded;
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (error) {
+    return res.status(401).json({ error: "Token inválido ou expirado" });
+  }
+
+  try {
+    const user = await prisma.usuario.findUnique({
+      where: { id: decoded.id },
+      select: { tokenVersion: true },
+    });
+
+    // Tokens antigos (pre-deploy) nao tem `v`; tratamos como 0 para nao
+    // deslogar todo mundo de uma vez. Reset/troca incrementam tokenVersion.
+    if (!user || (decoded.v ?? 0) !== user.tokenVersion) {
+      return res.status(401).json({ error: "Token inválido ou expirado" });
+    }
+
     req.userId = decoded.id;
     req.userType = decoded.tipo;
     next();
   } catch (error) {
-    return res.status(401).json({ error: "Token inválido ou expirado" });
+    next(error);
   }
 };
 

@@ -27,9 +27,11 @@ async function createUser(overrides = {}) {
 }
 
 function tokenFor(user) {
-  return jwt.sign({ id: user.id, tipo: user.tipoUsuario }, process.env.JWT_SECRET, {
-    expiresIn: '1d',
-  })
+  return jwt.sign(
+    { id: user.id, tipo: user.tipoUsuario, v: user.tokenVersion ?? 0 },
+    process.env.JWT_SECRET,
+    { expiresIn: '1d' }
+  )
 }
 
 const emUmDia = 24 * 60 * 60 * 1000

@@ -20,6 +20,10 @@ model Usuario {
   dataCadastro    DateTime  @default(now()) @map("data_cadastro") @db.Timestamp(6)
   ultimoAcesso    DateTime? @map("ultimo_acesso") @db.Timestamp(6)
   ativo           Boolean   @default(true)
+  resetCodigo     String?   @map("reset_codigo") @db.VarChar(255)
+  resetExpira     DateTime? @map("reset_expira") @db.Timestamp(6)
+  resetTentativas Int       @default(0) @map("reset_tentativas")
+  tokenVersion    Int       @default(0) @map("token_version")
 
   eventosOrganizados Evento[]
   inscricoes         Inscricao[]

@@ -1,7 +1,7 @@
 const request = require('supertest')
 const jwt = require('jsonwebtoken')
 const app = require('../app')
-const { resetDb } = require('./db')
+const { prisma, resetDb } = require('./db')
 const { createUser, tokenFor } = require('./factories')
 
 beforeEach(resetDb)
@@ -32,6 +32,23 @@ describe('middleware de autenticação', () => {
       .set('Authorization', `Bearer ${fake}`)
 
     expect(res.statusCode).toBe(401)
+  })
+
+  test('token com tokenVersion desatualizado -> 401', async () => {
+    const user = await createUser()
+    const token = tokenFor(user)
+
+    await prisma.usuario.update({
+      where: { id: user.id },
+      data: { tokenVersion: user.tokenVersion + 1 },
+    })
+
+    const res = await request(app)
+      .get('/api/minhas-inscricoes')
+      .set('Authorization', `Bearer ${token}`)
+
+    expect(res.statusCode).toBe(401)
+    expect(res.body.error).toBe('Token inválido ou expirado')
   })
 })
 

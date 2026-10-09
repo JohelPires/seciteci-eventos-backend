@@ -79,7 +79,7 @@ const login = async (req, res) => {
     });
 
     const token = jwt.sign(
-      { id: user.id, tipo: user.tipoUsuario },
+      { id: user.id, tipo: user.tipoUsuario, v: user.tokenVersion },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
