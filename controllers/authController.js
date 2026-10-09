@@ -198,4 +198,57 @@ const esqueciSenha = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile, alterarSenha, esqueciSenha };
+const redefinirSenha = async (req, res) => {
+  try {
+    const { email, codigo, novaSenha } = req.body;
+
+    const invalido = () =>
+      res.status(400).json({ error: "Código inválido ou expirado" });
+
+    const user = await prisma.usuario.findUnique({ where: { email } });
+
+    if (!user || !user.resetCodigo || !user.resetExpira) {
+      return invalido();
+    }
+
+    if (
+      user.resetExpira < new Date() ||
+      user.resetTentativas >= MAX_TENTATIVAS_RESET
+    ) {
+      return invalido();
+    }
+
+    const codigoValido = await bcrypt.compare(codigo, user.resetCodigo);
+
+    if (!codigoValido) {
+      const tentativas = user.resetTentativas + 1;
+      const data = { resetTentativas: tentativas };
+      if (tentativas >= MAX_TENTATIVAS_RESET) {
+        data.resetCodigo = null;
+        data.resetExpira = null;
+      }
+      await prisma.usuario.update({ where: { id: user.id }, data });
+      return invalido();
+    }
+
+    const senha = await bcrypt.hash(novaSenha, 10);
+
+    await prisma.usuario.update({
+      where: { id: user.id },
+      data: {
+        senha,
+        resetCodigo: null,
+        resetExpira: null,
+        resetTentativas: 0,
+        tokenVersion: { increment: 1 },
+      },
+    });
+
+    res.json({ message: "Senha redefinida com sucesso" });
+  } catch (error) {
+    console.error("Erro ao redefinir senha:", error);
+    res.status(500).json({ error: "Erro ao redefinir senha" });
+  }
+};
+
+module.exports = { register, login, getProfile, alterarSenha, esqueciSenha, redefinirSenha };

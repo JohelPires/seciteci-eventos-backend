@@ -20,6 +20,8 @@ router.post('/auth/login', loginValidator, authController.login)
 
 router.post('/auth/esqueci-senha', esqueciSenhaValidator, authController.esqueciSenha)
 
+router.post('/auth/redefinir-senha', redefinirSenhaValidator, authController.redefinirSenha)
+
 // Eventos públicos
 
 router.get('/eventos', eventosController.getEventos)
