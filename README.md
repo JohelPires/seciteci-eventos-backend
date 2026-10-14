@@ -7,8 +7,14 @@ API Node.js/Express + Prisma para cadastro de eventos.
 Requisitos: Docker com Compose v2.
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.yml up --build
 ```
+
+> **Sempre use `-f docker-compose.yml`.** O repositório também tem `compose.yml`,
+> o arquivo de **produção** exigido pela convenção `secitec-servidor`. O Docker
+> Compose descobre o `compose.yml` primeiro, então um `docker compose` sem `-f`
+> tentaria subir produção e falharia localmente por falta das variáveis
+> `${IMAGEM}`, `${APP_HOST}`, `${POSTGRES_PASSWORD}` etc.
 
 - API: http://localhost:3030
 - Swagger: http://localhost:3030/api-docs
@@ -21,19 +27,19 @@ O servidor recarrega automaticamente a cada alteração de código (nodemon + bi
 
 ```bash
 # aplicar seed (manual, uma vez)
-docker compose exec app npm run prisma:seed
+docker compose -f docker-compose.yml exec app npm run prisma:seed
 
 # parar (mantém os dados do banco)
-docker compose down
+docker compose -f docker-compose.yml down
 
 # parar e apagar os dados do banco
-docker compose down -v
+docker compose -f docker-compose.yml down -v
 
 # logs do servidor
-docker compose logs -f app
+docker compose -f docker-compose.yml logs -f app
 
 # abrir Prisma Studio
-docker compose exec app npm run prisma:studio
+docker compose -f docker-compose.yml exec app npm run prisma:studio
 ```
 
 As migrations são aplicadas automaticamente ao subir (`prisma migrate deploy`).
