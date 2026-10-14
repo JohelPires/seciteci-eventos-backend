@@ -36,7 +36,7 @@ const eventoValidator = [
     .withMessage("Tipo de evento inválido"),
   body("financiadorTipo")
     .optional({ values: "falsy" })
-    .isIn(["publico", "privado"])
+    .isIn(["publico", "privado", "hibrido"])
     .withMessage("Tipo de financiador inválido"),
   body("financiadorNome")
     .optional({ values: "falsy" })
