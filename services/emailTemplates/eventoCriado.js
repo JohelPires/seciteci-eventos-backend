@@ -1,4 +1,4 @@
-const { formatarData } = require('./helpers')
+const { formatarData, rotuloStatus } = require('./helpers')
 
 const eventoCriadoTemplate = ({ usuario, evento }) => {
    const presencial = evento.tipoEvento === 'presencial'
@@ -8,7 +8,8 @@ const eventoCriadoTemplate = ({ usuario, evento }) => {
         }`
       : evento.linkOnline || 'A definir'
 
-   const ehRascunho = evento.status === 'rascunho'
+   const aguardandoAprovacao = evento.status === 'rascunho'
+   const statusLabel = aguardandoAprovacao ? 'Aguardando aprovacao do moderador' : rotuloStatus(evento.status)
    const subject = `Evento criado: ${evento.titulo}`
 
    const html = `
@@ -20,11 +21,11 @@ const eventoCriadoTemplate = ({ usuario, evento }) => {
             <li><strong>Início:</strong> ${formatarData(evento.dataInicio)}</li>
             <li><strong>Fim:</strong> ${formatarData(evento.dataFim)}</li>
             <li><strong>${presencial ? 'Local' : 'Link'}:</strong> ${local}</li>
-            <li><strong>Status:</strong> ${evento.status}</li>
+            <li><strong>Status:</strong> ${statusLabel}</li>
          </ul>
          ${
-            ehRascunho
-               ? '<p style="background-color: #fff3cd; padding: 12px; border-radius: 4px;">O evento esta em <strong>rascunho</strong> e ainda nao esta visivel ao publico.</p>'
+            aguardandoAprovacao
+               ? '<p style="background-color: #fff3cd; padding: 12px; border-radius: 4px;">Seu evento foi criado e esta aguardando aprovacao do moderador.</p>'
                : ''
          }
          <p style="color: #7f8c8d; font-size: 12px;">Esta e uma mensagem automatica. Nao responda este e-mail.</p>
@@ -40,8 +41,8 @@ const eventoCriadoTemplate = ({ usuario, evento }) => {
       `Inicio: ${formatarData(evento.dataInicio)}`,
       `Fim: ${formatarData(evento.dataFim)}`,
       `${presencial ? 'Local' : 'Link'}: ${local}`,
-      `Status: ${evento.status}`,
-      ehRascunho ? 'O evento esta em rascunho e ainda nao esta visivel ao publico.' : '',
+      `Status: ${statusLabel}`,
+      aguardandoAprovacao ? 'Seu evento foi criado e esta aguardando aprovacao do moderador.' : '',
    ]
       .filter(Boolean)
       .join('\n')
