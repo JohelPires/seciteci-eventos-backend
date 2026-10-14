@@ -1,4 +1,4 @@
-const { formatarData, rotuloStatus } = require('./helpers')
+const { formatarData, rotuloStatus, formatarFinanciador } = require('./helpers')
 
 const eventoStatusAlteradoTemplate = ({
    usuario,
@@ -23,6 +23,8 @@ const eventoStatusAlteradoTemplate = ({
          ? motivoCancelamento.trim()
          : null
 
+   const financiador = formatarFinanciador(evento)
+
    const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
          <h2 style="color: #2c3e50;">Ola, ${usuario.nome}!</h2>
@@ -32,6 +34,7 @@ const eventoStatusAlteradoTemplate = ({
             <li><strong>Fim:</strong> ${formatarData(evento.dataFim)}</li>
             <li><strong>${presencial ? 'Local' : 'Link'}:</strong> ${local}</li>
             <li><strong>Status atual:</strong> ${rotuloNovo}</li>
+            ${financiador ? `<li><strong>Financiador:</strong> ${financiador}</li>` : ''}
             ${motivo ? `<li><strong>Motivo do cancelamento:</strong> ${motivo}</li>` : ''}
          </ul>
          <p style="color: #7f8c8d; font-size: 12px;">Esta e uma mensagem automatica. Nao responda este e-mail.</p>
@@ -49,6 +52,9 @@ const eventoStatusAlteradoTemplate = ({
       `${presencial ? 'Local' : 'Link'}: ${local}`,
       `Status atual: ${rotuloNovo}`,
    ]
+   if (financiador) {
+      linhas.push(`Financiador: ${financiador}`)
+   }
    if (motivo) {
       linhas.push(`Motivo do cancelamento: ${motivo}`)
    }

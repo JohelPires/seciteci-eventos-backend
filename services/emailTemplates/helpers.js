@@ -14,4 +14,19 @@ const ROTULOS_STATUS = {
 
 const rotuloStatus = (status) => ROTULOS_STATUS[status] || status
 
-module.exports = { TIMEZONE, formatarData, rotuloStatus }
+const ROTULOS_FINANCIADOR = {
+   publico: 'Publico',
+   privado: 'Privado',
+   hibrido: 'Hibrido',
+}
+
+const rotuloFinanciadorTipo = (tipo) => ROTULOS_FINANCIADOR[tipo] || tipo
+
+const formatarFinanciador = (evento) => {
+   const tipo = evento.financiadorTipo ? rotuloFinanciadorTipo(evento.financiadorTipo) : null
+   const nome = evento.financiadorNome && evento.financiadorNome.trim() ? evento.financiadorNome.trim() : null
+   if (tipo && nome) return `${tipo} - ${nome}`
+   return tipo || nome || null
+}
+
+module.exports = { TIMEZONE, formatarData, rotuloStatus, rotuloFinanciadorTipo, formatarFinanciador }

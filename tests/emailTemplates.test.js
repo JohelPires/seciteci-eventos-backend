@@ -38,6 +38,22 @@ describe('eventoStatusAlteradoTemplate', () => {
       expect(t.html).not.toContain('Motivo do cancelamento')
       expect(t.text).not.toContain('Motivo do cancelamento')
    })
+
+   test('inclui o financiador quando informado', () => {
+      const t = eventoStatusAlteradoTemplate({
+         ...base,
+         evento: { ...base.evento, financiadorTipo: 'publico', financiadorNome: 'MEC' },
+      })
+      expect(t.html).toContain('Financiador:')
+      expect(t.html).toContain('Publico - MEC')
+      expect(t.text).toContain('Financiador: Publico - MEC')
+   })
+
+   test('nao inclui financiador quando ausente', () => {
+      const t = eventoStatusAlteradoTemplate({ ...base })
+      expect(t.html).not.toContain('Financiador')
+      expect(t.text).not.toContain('Financiador')
+   })
 })
 
 describe('eventoCriadoTemplate', () => {
@@ -72,5 +88,21 @@ describe('eventoCriadoTemplate', () => {
       expect(t.html.toLowerCase()).not.toContain('rascunho')
       expect(t.html).not.toContain('aguardando aprovacao do moderador')
       expect(t.text).not.toContain('aguardando aprovacao do moderador')
+   })
+
+   test('inclui o financiador quando informado', () => {
+      const t = eventoCriadoTemplate({
+         ...base,
+         evento: { ...base.evento, financiadorTipo: 'hibrido', financiadorNome: 'Fulano de Tal' },
+      })
+      expect(t.html).toContain('Financiador:')
+      expect(t.html).toContain('Hibrido - Fulano de Tal')
+      expect(t.text).toContain('Financiador: Hibrido - Fulano de Tal')
+   })
+
+   test('nao inclui financiador quando ausente', () => {
+      const t = eventoCriadoTemplate({ ...base })
+      expect(t.html).not.toContain('Financiador')
+      expect(t.text).not.toContain('Financiador')
    })
 })
