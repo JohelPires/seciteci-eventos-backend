@@ -176,6 +176,99 @@ describe('PUT /api/eventos/:id', () => {
     expect(res.statusCode).toBe(403)
     expect(res.body.error).toBe('Apenas administradores podem publicar eventos')
   })
+
+  test('cancelar com motivo persiste o motivo', async () => {
+    const owner = await createUser()
+    const evento = await createEvento(owner.id, { status: 'publicado' })
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send({ status: 'cancelado', motivoCancelamento: 'Chuva forte' })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.evento.status).toBe('cancelado')
+    expect(res.body.evento.motivoCancelamento).toBe('Chuva forte')
+    const noBanco = await prisma.evento.findUnique({ where: { id: evento.id } })
+    expect(noBanco.motivoCancelamento).toBe('Chuva forte')
+
+    const detalhe = await request(app).get(`/api/eventos/${evento.id}`)
+    expect(detalhe.body.evento.motivoCancelamento).toBe('Chuva forte')
+  })
+
+  test('cancelar sem motivo mantem null', async () => {
+    const owner = await createUser()
+    const evento = await createEvento(owner.id, { status: 'publicado' })
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send({ status: 'cancelado' })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.evento.motivoCancelamento).toBeNull()
+  })
+
+  test('motivo vazio normaliza para null', async () => {
+    const owner = await createUser()
+    const evento = await createEvento(owner.id, { status: 'publicado' })
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send({ status: 'cancelado', motivoCancelamento: '   ' })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.evento.motivoCancelamento).toBeNull()
+  })
+
+  test('reativar evento limpa o motivo', async () => {
+    const owner = await createUser()
+    const evento = await createEvento(owner.id)
+    await prisma.evento.update({
+      where: { id: evento.id },
+      data: { status: 'cancelado', motivoCancelamento: 'Motivo antigo' },
+    })
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send({ status: 'rascunho' })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.evento.status).toBe('rascunho')
+    expect(res.body.evento.motivoCancelamento).toBeNull()
+  })
+
+  test('motivo com mais de 1000 caracteres -> 400', async () => {
+    const owner = await createUser()
+    const evento = await createEvento(owner.id, { status: 'publicado' })
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send({ status: 'cancelado', motivoCancelamento: 'a'.repeat(1001) })
+
+    expect(res.statusCode).toBe(400)
+    expect(res.body.error).toBe('Motivo de cancelamento deve ter no máximo 1000 caracteres')
+  })
+
+  test('editar motivo de evento cancelado -> 200', async () => {
+    const owner = await createUser()
+    const evento = await createEvento(owner.id)
+    await prisma.evento.update({
+      where: { id: evento.id },
+      data: { status: 'cancelado', motivoCancelamento: 'Motivo antigo' },
+    })
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send({ motivoCancelamento: 'Motivo novo' })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.evento.motivoCancelamento).toBe('Motivo novo')
+  })
 })
 
 describe('DELETE /api/eventos/:id', () => {

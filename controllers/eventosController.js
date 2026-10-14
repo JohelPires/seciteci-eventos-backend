@@ -293,6 +293,32 @@ const updateEvento = async (req, res) => {
       delete dadosAtualizacao.organizadorId
       delete dadosAtualizacao.dataCriacao
 
+      // Normalizar e validar o motivo de cancelamento
+      if (
+         dadosAtualizacao.motivoCancelamento !== undefined &&
+         dadosAtualizacao.motivoCancelamento !== null
+      ) {
+         if (typeof dadosAtualizacao.motivoCancelamento !== 'string') {
+            return res.status(400).json({ error: 'Motivo de cancelamento inválido' })
+         }
+         dadosAtualizacao.motivoCancelamento = dadosAtualizacao.motivoCancelamento.trim()
+         if (dadosAtualizacao.motivoCancelamento.length > 1000) {
+            return res
+               .status(400)
+               .json({ error: 'Motivo de cancelamento deve ter no máximo 1000 caracteres' })
+         }
+         if (dadosAtualizacao.motivoCancelamento === '') {
+            dadosAtualizacao.motivoCancelamento = null
+         }
+      }
+
+      // Limpar o motivo sempre que o status resultante não for "cancelado"
+      const statusEfetivo =
+         dadosAtualizacao.status !== undefined ? dadosAtualizacao.status : evento.status
+      if (statusEfetivo !== 'cancelado') {
+         dadosAtualizacao.motivoCancelamento = null
+      }
+
       // Converter datas se fornecidas
       if (dadosAtualizacao.dataInicio) {
          dadosAtualizacao.dataInicio = new Date(dadosAtualizacao.dataInicio)
@@ -363,6 +389,7 @@ const updateEvento = async (req, res) => {
                evento: eventoAtualizado,
                statusAnterior: evento.status,
                statusNovo: dadosAtualizacao.status,
+               motivoCancelamento: eventoAtualizado.motivoCancelamento,
             })
          )
       }

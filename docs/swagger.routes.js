@@ -511,7 +511,7 @@
  *     tags:
  *       - Eventos
  *     summary: Atualizar evento
- *     description: Atualiza informações de um evento (dono do evento ou admin). Apenas administradores podem mudar o status para publicado; os demais ficam restritos a rascunho/cancelado/encerrado.
+ *     description: Atualiza informações de um evento (dono do evento ou admin). Apenas administradores podem mudar o status para publicado; os demais ficam restritos a rascunho/cancelado/encerrado. Aceita "motivoCancelamento" (opcional, máx. 1000 caracteres), limpo automaticamente quando o evento deixa de estar cancelado.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -534,6 +534,10 @@
  *               status:
  *                 type: string
  *                 enum: [rascunho, publicado, cancelado, encerrado]
+ *               motivoCancelamento:
+ *                 type: string
+ *                 maxLength: 1000
+ *                 description: Motivo do cancelamento. Opcional; exibido quando o status do evento é "cancelado" e limpo automaticamente ao reativar.
  *               linkGoogleMaps:
  *                 type: string
  *                 description: Link do Google Maps
