@@ -46,12 +46,11 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
-# Copiar a aplicação inteira do builder (o contexto de build é
-# enxuto via .dockerignore)
-COPY --from=builder /app ./
-
-# Mudar propriedade dos arquivos
-RUN chown -R nodejs:nodejs /app
+# Copiar a aplicação inteira do builder já com o ownership do usuário
+# não-root (o contexto de build é enxuto via .dockerignore). O --chown
+# evita a camada extra + varredura recursiva do antigo `RUN chown -R`,
+# que levava ~26 min no disco da VM.
+COPY --from=builder --chown=nodejs:nodejs /app ./
 
 # Usar usuário não-root
 USER nodejs

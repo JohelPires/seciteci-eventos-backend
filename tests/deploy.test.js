@@ -8,7 +8,7 @@ const readDockerignore = () =>
 
 describe('imagem de produção', () => {
    test('runner copia a aplicação inteira do builder', () => {
-      expect(readDockerfile()).toMatch(/COPY --from=builder \/app \.\//)
+      expect(readDockerfile()).toMatch(/COPY --from=builder(?: --chown=\S+)? \/app \.\//)
    })
 
    test('nenhum arquivo de runtime é excluído do contexto de build', () => {
