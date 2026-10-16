@@ -511,7 +511,7 @@
  *     tags:
  *       - Eventos
  *     summary: Atualizar evento
- *     description: Atualiza informações de um evento (dono do evento ou admin). Apenas administradores podem mudar o status para publicado; os demais ficam restritos a rascunho/cancelado/encerrado. Aceita "motivoCancelamento" (opcional, máx. 1000 caracteres), limpo automaticamente quando o evento deixa de estar cancelado. Campos que não são colunas do evento (ex.: objeto completo do GET com categoria/organizador/_count) são ignorados; categoriaId, datas, horários e números podem vir como string e são convertidos. Fields não reconhecidos retornam 400 em NODE_ENV=development com "detalhe".
+ *     description: Atualiza informações de um evento (dono do evento ou admin). Apenas administradores podem mudar o status para publicado; os demais ficam restritos a rascunho/cancelado/encerrado. Aceita "motivoCancelamento" (opcional, máx. 1000 caracteres), limpo automaticamente quando o evento deixa de estar cancelado. Campos que não são colunas do evento (ex.: objeto completo do GET com categoria/organizador/_count) são ignorados; categoriaId, datas, horários e números podem vir como string e são convertidos. Campos não reconhecidos retornam 400; em NODE_ENV=development a resposta de erro traz o campo detalhe com a mensagem crua.
  *     security:
  *       - bearerAuth: []
  *     parameters:

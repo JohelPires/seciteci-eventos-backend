@@ -21,7 +21,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    command: sh -c "npx prisma migrate deploy && npm run dev"
+    # prisma generate no start: o volume nomeado node_modules sobrepõe o
+    # client gerado no build da imagem; sem isto, o client do volume fica
+    # obsoleto quando o schema muda (Unknown argument em campos novos).
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run dev"
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/sistema_eventos?schema=public"
       PORT: "3030"
