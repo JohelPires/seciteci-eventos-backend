@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { authMiddleware, isOrganizador, isAdmin } = require('../middleware/auth')
-const { registerValidator, loginValidator, eventoValidator, inscricaoValidator, alterarSenhaValidator, esqueciSenhaValidator, redefinirSenhaValidator } = require('../middleware/validators')
+const { registerValidator, loginValidator, eventoValidator, eventoUpdateValidator, inscricaoValidator, alterarSenhaValidator, esqueciSenhaValidator, redefinirSenhaValidator } = require('../middleware/validators')
 
 const authController = require('../controllers/authController')
 const eventosController = require('../controllers/eventosController')
@@ -50,7 +50,7 @@ router.patch('/usuarios/:id/promover', authMiddleware, isAdmin, usuariosControll
 
 // router.post('/eventos', authMiddleware, isOrganizador, eventoValidator, eventosController.createEvento)
 router.post('/eventos', authMiddleware, eventoValidator, eventosController.createEvento)
-router.put('/eventos/:id', authMiddleware, eventosController.updateEvento)
+router.put('/eventos/:id', authMiddleware, eventoUpdateValidator, eventosController.updateEvento)
 router.delete('/eventos/:id', authMiddleware, eventosController.deleteEvento)
 router.get('/meus-eventos', authMiddleware, eventosController.getMeusEventos)
 

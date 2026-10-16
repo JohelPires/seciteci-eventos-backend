@@ -6,6 +6,7 @@ const prisma = require('../config/prisma')
 const { sendMailSafe } = require('../services/emailService')
 const { eventoCriadoTemplate } = require('../services/emailTemplates/eventoCriado')
 const { eventoStatusAlteradoTemplate } = require('../services/emailTemplates/eventoStatusAlterado')
+const { sanitizeEventoInput, respondPrismaError } = require('../services/eventoPayload')
 
 const getEventos = async (req, res) => {
    try {
@@ -167,82 +168,29 @@ const getEventoById = async (req, res) => {
 
 const createEvento = async (req, res) => {
    try {
-      const {
-         titulo,
-         descricao,
-         categoriaId,
-         dataInicio,
-         dataFim,
-         horarioAbertura,
-         horarioEncerramento,
-         capacidadeMaxima,
-         valorInscricao,
-         tipoEvento,
-         linkOnline,
-         LocalLinkGoogleMaps,
-         linkPaginaEvento,
-         LocalNome,
-         LocalEndereco,
-         LocalNumero,
-         LocalComplemento,
-         LocalBairro,
-         LocalCidade,
-         LocalEstado,
-         LocalCep,
-         LocalPais,
-         LocalCapacidade,
-         LocalLatitude,
-         LocalLongitude,
-         LocalObservacoes,
-         imagemCapa,
-         status,
-         publicoAlvo,
-         requisitos,
-         financiadorTipo,
-         financiadorNome,
-      } = req.body
-
       // Apenas administradores podem criar o evento já publicado;
       // qualquer outro usuário cria sempre como rascunho.
       const statusFinal =
-         req.userType === 'admin' ? status || 'rascunho' : 'rascunho'
+         req.userType === 'admin' ? req.body.status || 'rascunho' : 'rascunho'
+
+      // Whitelist + normalização: converte categoriaId/datas/números, descarta
+      // campos que não são coluna do modelo Evento.
+      const dados = sanitizeEventoInput(req.body)
 
       const evento = await prisma.evento.create({
          data: {
-            titulo,
-            descricao,
-            categoriaId: categoriaId ? parseInt(categoriaId) : null,
+            ...dados,
             organizadorId: req.userId,
-            dataInicio: new Date(dataInicio),
-            dataFim: new Date(dataFim),
-            horarioAbertura: horarioAbertura ? new Date(`1970-01-01T${horarioAbertura}`) : null,
-            horarioEncerramento: horarioEncerramento ? new Date(`1970-01-01T${horarioEncerramento}`) : null,
-            capacidadeMaxima: capacidadeMaxima ? parseInt(capacidadeMaxima) : null,
-            vagasDisponiveis: capacidadeMaxima ? parseInt(capacidadeMaxima) : null,
-            valorInscricao: valorInscricao || 0,
-            tipoEvento: tipoEvento || 'presencial',
-            linkOnline,
-            LocalLinkGoogleMaps: LocalLinkGoogleMaps,
-            linkPaginaEvento,
-            LocalNome: LocalNome || 'A definir',
-            LocalEndereco: LocalEndereco || '',
-            LocalNumero,
-            LocalComplemento,
-            LocalBairro,
-            LocalCidade: LocalCidade || 'Cuiabá',
-            LocalEstado: LocalEstado || 'MT',
-            LocalCep,
-            LocalPais: LocalPais || 'Brasil',
-            LocalCapacidade: LocalCapacidade ? parseInt(LocalCapacidade) : null,
-            LocalLatitude: LocalLatitude ? parseFloat(LocalLatitude) : null,
-            LocalLongitude: LocalLongitude ? parseFloat(LocalLongitude) : null,
-            LocalObservacoes,
-            imagemCapa,
+            // Derivados e defaults (mantém comportamento anterior)
+            vagasDisponiveis: dados.capacidadeMaxima ? dados.capacidadeMaxima : null,
+            valorInscricao: dados.valorInscricao || 0,
+            tipoEvento: dados.tipoEvento || 'presencial',
+            LocalNome: dados.LocalNome || 'A definir',
+            LocalEndereco: dados.LocalEndereco || '',
+            LocalCidade: dados.LocalCidade || 'Cuiabá',
+            LocalEstado: dados.LocalEstado || 'MT',
+            LocalPais: dados.LocalPais || 'Brasil',
             status: statusFinal,
-            publicoAlvo,
-            requisitos,
-            financiadorTipo,
-            financiadorNome,
          },
          include: {
             categoria: true,
@@ -266,7 +214,12 @@ const createEvento = async (req, res) => {
       })
    } catch (error) {
       console.error('Erro ao criar evento:', error)
-      res.status(500).json({ error: 'Erro ao criar evento' })
+      respondPrismaError(error, res, {
+         validacao: 'Dados inválidos para criar o evento',
+         duplicado: 'Registro duplicado',
+         referencia: 'Referência inválida (categoria ou local inexistente)',
+         padrao: 'Erro ao criar evento',
+      })
    }
 }
 
@@ -286,12 +239,10 @@ const updateEvento = async (req, res) => {
          return res.status(403).json({ error: 'Sem permissão para editar este evento' })
       }
 
-      const dadosAtualizacao = { ...req.body }
-
-      // Remover campos que não devem ser atualizados diretamente
-      delete dadosAtualizacao.id
-      delete dadosAtualizacao.organizadorId
-      delete dadosAtualizacao.dataCriacao
+      // Whitelist + normalização: ignoram-se campos que não são coluna (ex.:
+      // resposta do GET com categoria/organizador/_count/cache) e convertem-se
+      // tipos (categoriaId string, datas, horários, números).
+      const dadosAtualizacao = sanitizeEventoInput(req.body)
 
       // Normalizar e validar o motivo de cancelamento
       if (
@@ -317,40 +268,6 @@ const updateEvento = async (req, res) => {
          dadosAtualizacao.status !== undefined ? dadosAtualizacao.status : evento.status
       if (statusEfetivo !== 'cancelado') {
          dadosAtualizacao.motivoCancelamento = null
-      }
-
-      // Converter datas se fornecidas
-      if (dadosAtualizacao.dataInicio) {
-         dadosAtualizacao.dataInicio = new Date(dadosAtualizacao.dataInicio)
-      }
-      if (dadosAtualizacao.dataFim) {
-         dadosAtualizacao.dataFim = new Date(dadosAtualizacao.dataFim)
-      }
-      if (dadosAtualizacao.horarioAbertura) {
-         dadosAtualizacao.horarioAbertura = new Date(`1970-01-01T${dadosAtualizacao.horarioAbertura}`)
-      }
-      if (dadosAtualizacao.horarioEncerramento) {
-         dadosAtualizacao.horarioEncerramento = new Date(`1970-01-01T${dadosAtualizacao.horarioEncerramento}`)
-      }
-
-      // Converter números se fornecidos
-      if (dadosAtualizacao.capacidadeMaxima) {
-         dadosAtualizacao.capacidadeMaxima = parseInt(dadosAtualizacao.capacidadeMaxima)
-      }
-      if (dadosAtualizacao.LocalCapacidade) {
-         dadosAtualizacao.LocalCapacidade = parseInt(dadosAtualizacao.LocalCapacidade)
-      }
-      if (dadosAtualizacao.LocalLatitude) {
-         dadosAtualizacao.LocalLatitude = parseFloat(dadosAtualizacao.LocalLatitude)
-      }
-      if (dadosAtualizacao.LocalLongitude) {
-         dadosAtualizacao.LocalLongitude = parseFloat(dadosAtualizacao.LocalLongitude)
-      }
-
-      // Mapear nomes de campos se necessário
-      if (dadosAtualizacao.linkGoogleMaps !== undefined) {
-         dadosAtualizacao.LocalLinkGoogleMaps = dadosAtualizacao.linkGoogleMaps
-         delete dadosAtualizacao.linkGoogleMaps
       }
 
       // Apenas administradores podem publicar eventos
@@ -400,7 +317,13 @@ const updateEvento = async (req, res) => {
       })
    } catch (error) {
       console.error('Erro ao atualizar evento:', error)
-      res.status(500).json({ error: 'Erro ao atualizar evento' })
+      respondPrismaError(error, res, {
+         naoEncontrado: 'Evento não encontrado',
+         duplicado: 'Registro duplicado',
+         referencia: 'Referência inválida (categoria ou local inexistente)',
+         validacao: 'Dados inválidos para atualização do evento',
+         padrao: 'Erro ao atualizar evento',
+      })
    }
 }
 

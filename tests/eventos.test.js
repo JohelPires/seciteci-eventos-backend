@@ -177,6 +177,70 @@ describe('PUT /api/eventos/:id', () => {
     expect(res.body.error).toBe('Apenas administradores podem publicar eventos')
   })
 
+  test('admin publica enviando o objeto completo do GET (campos nao-editaveis sao ignorados)', async () => {
+    const owner = await createUser()
+    const admin = await createUser({ tipoUsuario: 'admin' })
+    const evento = await createEvento(owner.id, { status: 'rascunho' })
+
+    const detalhe = await request(app).get(`/api/eventos/${evento.id}`)
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+      .send({
+        ...detalhe.body.evento,
+        status: 'publicado',
+        cache: true,
+        mediaAvaliacoes: '4.5',
+        programacao: [],
+        avaliacoes: [],
+        _count: { inscricoes: 0, avaliacoes: 0 },
+      })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.evento.status).toBe('publicado')
+  })
+
+  test('categoriaId como string persiste como Int', async () => {
+    const owner = await createUser()
+    const evento = await createEvento(owner.id)
+    const cat = await prisma.categoria.create({ data: { nome: 'Cat Update' } })
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send({ categoriaId: String(cat.id) })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.evento.categoriaId).toBe(cat.id)
+  })
+
+  test('categoriaId inexistente -> 400', async () => {
+    const owner = await createUser()
+    const evento = await createEvento(owner.id)
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send({ categoriaId: 999999 })
+
+    expect(res.statusCode).toBe(400)
+    expect(res.body.error).toBe('Referência inválida (categoria ou local inexistente)')
+  })
+
+  test('status invalido no PUT -> 400 (validador)', async () => {
+    const owner = await createUser()
+    const evento = await createEvento(owner.id)
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send({ status: 'qualquer' })
+
+    expect(res.statusCode).toBe(400)
+    expect(Array.isArray(res.body.errors)).toBe(true)
+  })
+
   test('cancelar com motivo persiste o motivo', async () => {
     const owner = await createUser()
     const evento = await createEvento(owner.id, { status: 'publicado' })

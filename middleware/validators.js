@@ -52,6 +52,32 @@ const eventoValidator = [
   validate,
 ];
 
+const eventoUpdateValidator = [
+  body("titulo").optional({ values: "falsy" }).trim().notEmpty().withMessage("Título não pode ser vazio"),
+  body("dataInicio").optional({ values: "falsy" }).isISO8601().withMessage("Data de início inválida"),
+  body("dataFim").optional({ values: "falsy" }).isISO8601().withMessage("Data de fim inválida"),
+  body("tipoEvento")
+    .optional({ values: "falsy" })
+    .isIn(["presencial", "online", "hibrido"])
+    .withMessage("Tipo de evento inválido"),
+  body("financiadorTipo")
+    .optional({ values: "falsy" })
+    .isIn(["publico", "privado", "hibrido"])
+    .withMessage("Tipo de financiador inválido"),
+  body("financiadorNome")
+    .optional({ values: "falsy" })
+    .isString()
+    .withMessage("Nome do financiador inválido")
+    .trim()
+    .isLength({ max: 150 })
+    .withMessage("Nome do financiador deve ter no máximo 150 caracteres"),
+  body("status")
+    .optional({ values: "falsy" })
+    .isIn(["rascunho", "publicado", "cancelado", "encerrado"])
+    .withMessage("Status de evento inválido"),
+  validate,
+];
+
 const inscricaoValidator = [
   body("eventoId").isInt({ min: 1 }).withMessage("ID do evento inválido"),
   validate,
@@ -93,6 +119,7 @@ module.exports = {
   registerValidator,
   loginValidator,
   eventoValidator,
+  eventoUpdateValidator,
   inscricaoValidator,
   alterarSenhaValidator,
   esqueciSenhaValidator,
