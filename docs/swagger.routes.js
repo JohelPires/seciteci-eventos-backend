@@ -297,7 +297,7 @@
  *     tags:
  *       - Eventos
  *     summary: Listar eventos
- *     description: Retorna lista paginada de eventos com filtros
+ *     description: Retorna lista paginada de eventos com filtros. Cada evento da resposta inclui a sua lista de financiadores (nome e tipo).
  *     parameters:
  *       - in: query
  *         name: categoria
