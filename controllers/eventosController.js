@@ -6,7 +6,7 @@ const prisma = require('../config/prisma')
 const { sendMailSafe } = require('../services/emailService')
 const { eventoCriadoTemplate } = require('../services/emailTemplates/eventoCriado')
 const { eventoStatusAlteradoTemplate } = require('../services/emailTemplates/eventoStatusAlterado')
-const { sanitizeEventoInput, respondPrismaError } = require('../services/eventoPayload')
+const { sanitizeEventoInput, sanitizeFinanciadores, respondPrismaError } = require('../services/eventoPayload')
 
 const getEventos = async (req, res) => {
    try {
@@ -177,6 +177,8 @@ const createEvento = async (req, res) => {
       // campos que não são coluna do modelo Evento.
       const dados = sanitizeEventoInput(req.body)
 
+      const financiadores = sanitizeFinanciadores(req.body) ?? []
+
       const evento = await prisma.evento.create({
          data: {
             ...dados,
@@ -191,9 +193,11 @@ const createEvento = async (req, res) => {
             LocalEstado: dados.LocalEstado || 'MT',
             LocalPais: dados.LocalPais || 'Brasil',
             status: statusFinal,
+            financiadores: { create: financiadores },
          },
          include: {
             categoria: true,
+            financiadores: { orderBy: { id: 'asc' } },
             organizador: {
                select: {
                   id: true,

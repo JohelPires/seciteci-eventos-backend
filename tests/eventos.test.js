@@ -381,3 +381,82 @@ describe('DELETE /api/eventos/:id', () => {
     expect(await prisma.evento.findUnique({ where: { id: evento.id } })).not.toBeNull()
   })
 })
+
+describe('financiadores', () => {
+  test('POST cria evento com financiadores e devolve o array', async () => {
+    const user = await createUser()
+    const res = await request(app)
+      .post('/api/eventos')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+      .send(
+        eventoPayload({
+          financiadores: [
+            { tipo: 'publico', nome: 'MEC' },
+            { nome: 'FIEMT' },
+          ],
+        })
+      )
+
+    expect(res.statusCode).toBe(201)
+    expect(res.body.evento.financiadores).toHaveLength(2)
+    expect(res.body.evento.financiadores[0]).toMatchObject({ tipo: 'publico', nome: 'MEC' })
+    expect(res.body.evento.financiadores[1].tipo).toBeNull()
+    expect(await prisma.financiador.count({ where: { eventoId: res.body.evento.id } })).toBe(2)
+  })
+
+  test('POST sem financiadores cria evento com lista vazia', async () => {
+    const user = await createUser()
+    const res = await request(app)
+      .post('/api/eventos')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+      .send(eventoPayload())
+
+    expect(res.statusCode).toBe(201)
+    expect(res.body.evento.financiadores).toEqual([])
+  })
+
+  test('POST com financiador sem nome -> 400', async () => {
+    const user = await createUser()
+    const res = await request(app)
+      .post('/api/eventos')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+      .send(eventoPayload({ financiadores: [{ tipo: 'publico' }] }))
+
+    expect(res.statusCode).toBe(400)
+    expect(Array.isArray(res.body.errors)).toBe(true)
+  })
+
+  test('POST com tipo de financiador invalido -> 400', async () => {
+    const user = await createUser()
+    const res = await request(app)
+      .post('/api/eventos')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+      .send(eventoPayload({ financiadores: [{ nome: 'MEC', tipo: 'estatal' }] }))
+
+    expect(res.statusCode).toBe(400)
+    expect(Array.isArray(res.body.errors)).toBe(true)
+  })
+
+  test('POST com financiadores que nao e array -> 400', async () => {
+    const user = await createUser()
+    const res = await request(app)
+      .post('/api/eventos')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+      .send(eventoPayload({ financiadores: 'MEC' }))
+
+    expect(res.statusCode).toBe(400)
+    expect(Array.isArray(res.body.errors)).toBe(true)
+  })
+
+  test('POST com mais de 20 financiadores -> 400', async () => {
+    const user = await createUser()
+    const muitos = Array.from({ length: 21 }, (_, i) => ({ nome: `Financiador ${i}` }))
+    const res = await request(app)
+      .post('/api/eventos')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+      .send(eventoPayload({ financiadores: muitos }))
+
+    expect(res.statusCode).toBe(400)
+    expect(Array.isArray(res.body.errors)).toBe(true)
+  })
+})

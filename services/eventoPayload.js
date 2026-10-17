@@ -37,8 +37,6 @@ const WRITABLE_FIELDS = [
    'motivoCancelamento',
    'publicoAlvo',
    'requisitos',
-   'financiadorTipo',
-   'financiadorNome',
    'destaque',
 ]
 
@@ -119,6 +117,17 @@ function normalizeEventoFields(data) {
    return normalized
 }
 
+// Normaliza o array `financiadores` do body (já validado pelo middleware).
+// - chave ausente/falsy => undefined (PUT mantém o estado atual; POST cria vazio)
+// - array => [{ tipo, nome }] já trimado, pronto para o create aninhado
+function sanitizeFinanciadores(body) {
+   if (!Array.isArray(body.financiadores)) return undefined
+   return body.financiadores.map((item) => ({
+      tipo: item?.tipo ? String(item.tipo).trim() || null : null,
+      nome: String(item?.nome ?? '').trim(),
+   }))
+}
+
 // Whitelist + normalização: descarta campos não-column (ex.: resposta do GET
 // com categoria/organizador/_count/cache) e converte tipos.
 function sanitizeEventoInput(body) {
@@ -160,6 +169,7 @@ module.exports = {
    pickEventoFields,
    normalizeEventoFields,
    sanitizeEventoInput,
+   sanitizeFinanciadores,
    mapPrismaError,
    respondPrismaError,
 }

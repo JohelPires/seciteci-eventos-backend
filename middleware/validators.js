@@ -27,6 +27,27 @@ const loginValidator = [
   validate,
 ];
 
+const financiadoresValidator = [
+  body("financiadores")
+    .optional({ values: "falsy" })
+    .custom((valor) => Array.isArray(valor))
+    .withMessage("Financiadores deve ser um array")
+    .custom((valor) => valor.length <= 20)
+    .withMessage("Máximo de 20 financiadores por evento"),
+  body("financiadores.*.nome")
+    .isString()
+    .withMessage("Nome do financiador inválido")
+    .trim()
+    .notEmpty()
+    .withMessage("Nome do financiador é obrigatório")
+    .isLength({ max: 150 })
+    .withMessage("Nome do financiador deve ter no máximo 150 caracteres"),
+  body("financiadores.*.tipo")
+    .optional({ values: "falsy" })
+    .isIn(["publico", "privado", "hibrido"])
+    .withMessage("Tipo de financiador inválido"),
+];
+
 const eventoValidator = [
   body("titulo").trim().notEmpty().withMessage("Título é obrigatório"),
   body("dataInicio").isISO8601().withMessage("Data de início inválida"),
@@ -34,17 +55,7 @@ const eventoValidator = [
   body("tipoEvento")
     .isIn(["presencial", "online", "hibrido"])
     .withMessage("Tipo de evento inválido"),
-  body("financiadorTipo")
-    .optional({ values: "falsy" })
-    .isIn(["publico", "privado", "hibrido"])
-    .withMessage("Tipo de financiador inválido"),
-  body("financiadorNome")
-    .optional({ values: "falsy" })
-    .isString()
-    .withMessage("Nome do financiador inválido")
-    .trim()
-    .isLength({ max: 150 })
-    .withMessage("Nome do financiador deve ter no máximo 150 caracteres"),
+  ...financiadoresValidator,
   body("status")
     .optional()
     .isIn(["rascunho", "publicado", "cancelado", "encerrado"])
@@ -60,17 +71,7 @@ const eventoUpdateValidator = [
     .optional({ values: "falsy" })
     .isIn(["presencial", "online", "hibrido"])
     .withMessage("Tipo de evento inválido"),
-  body("financiadorTipo")
-    .optional({ values: "falsy" })
-    .isIn(["publico", "privado", "hibrido"])
-    .withMessage("Tipo de financiador inválido"),
-  body("financiadorNome")
-    .optional({ values: "falsy" })
-    .isString()
-    .withMessage("Nome do financiador inválido")
-    .trim()
-    .isLength({ max: 150 })
-    .withMessage("Nome do financiador deve ter no máximo 150 caracteres"),
+  ...financiadoresValidator,
   body("status")
     .optional({ values: "falsy" })
     .isIn(["rascunho", "publicado", "cancelado", "encerrado"])
