@@ -37,6 +37,9 @@ services:
       SMTP_SECURE: "${SMTP_SECURE:-true}"
       SMTP_USER: "${SMTP_USER:-}"
       SMTP_PASS: "${SMTP_PASS:-}"
+      # credenciais do admin usado pelo seed (sobrescreva via .env/shell se quiser)
+      ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@eventos.com}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin123}"
     ports:
       - "3030:3030"
     volumes:

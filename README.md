@@ -28,6 +28,10 @@ O servidor recarrega automaticamente a cada alteração de código (nodemon + bi
 ```bash
 # aplicar seed (manual, uma vez)
 docker compose -f docker-compose.yml exec app npm run prisma:seed
+# - NODE_ENV escolhe o seed: development roda o seed completo de dados de teste;
+#   production roda o seed enxuto (admin + categorias Ciência/Tecnologia/Inovação)
+# - e-mail/senha do admin vêm de ADMIN_EMAIL/ADMIN_PASSWORD (defaults de dev no docker-compose.yml)
+# - rodar em banco recém-criado: o seed de desenvolvimento duplica eventos em DB povoado
 
 # parar (mantém os dados do banco)
 docker compose -f docker-compose.yml down
@@ -60,3 +64,7 @@ Segredos vivem no GitLab (variável `APP_ENV`, tipo File, escopo `producao`);
 nada secreto entra no repo. O banco (`sistema_eventos`, Postgres próprio do
 `compose.yml`) é criado na primeira publicação; migrations rodam no boot do
 container. Rollback: re-executar a pipeline de um commit anterior.
+
+O seed de produção é um job manual (`seed:producao`) no GitLab, após o
+deploy: cria o admin (e-mail/senha de `ADMIN_EMAIL`/`ADMIN_PASSWORD` na
+`APP_ENV`) e as categorias Ciência, Tecnologia e Inovação.

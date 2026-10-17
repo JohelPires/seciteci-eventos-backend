@@ -29,9 +29,10 @@ publicar:producao:
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
 
-# Seed do banco de produção (uma vez, botão): categorias + usuários base
-# (admin/organizador com senha padrão "admin123" — trocar senha após o
-# primeiro login). Depende do `publicar:producao` já ter rodado.
+# Seed do banco de produção (uma vez, botão): categorias base (Ciência,
+# Tecnologia, Inovação) + usuário admin. O e-mail/senha do admin vêm das
+# variáveis ADMIN_EMAIL/ADMIN_PASSWORD — adicione-as à APP_ENV (File) no
+# GitLab. Depende do `publicar:producao` já ter rodado.
 seed:producao:
   stage: deploy
   tags: [secitec-vps]
