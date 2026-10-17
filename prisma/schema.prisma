@@ -102,10 +102,8 @@ model Evento {
   status               String    @default("rascunho") @db.VarChar(20)
   motivoCancelamento   String?   @map("motivo_cancelamento") @db.Text
   publicoAlvo          String?   @map("publico_alvo") @db.Text
-  requisitos           String?   @db.Text
-  financiadorTipo      String?   @map("financiador_tipo") @db.VarChar(20)
-  financiadorNome      String?   @map("financiador_nome") @db.VarChar(150)
-  dataCriacao          DateTime  @default(now()) @map("data_criacao") @db.Timestamp(6)
+   requisitos           String?   @db.Text
+   dataCriacao          DateTime  @default(now()) @map("data_criacao") @db.Timestamp(6)
   dataAtualizacao      DateTime  @updatedAt @map("data_atualizacao") @db.Timestamp(6)
   destaque             Boolean   @default(false)
 
@@ -117,6 +115,7 @@ model Evento {
   programacao  Programacao[]
   avaliacoes   Avaliacao[]
   notificacoes Notificacao[]
+  financiadores Financiador[]
 
   @@map("eventos")
 }
@@ -218,8 +217,19 @@ model Notificacao {
   lida      Boolean  @default(false)
   dataEnvio DateTime @default(now()) @map("data_envio") @db.Timestamp(6)
 
-  usuario Usuario @relation(fields: [usuarioId], references: [id])
-  evento  Evento? @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+   usuario Usuario @relation(fields: [usuarioId], references: [id])
+   evento  Evento? @relation(fields: [eventoId], references: [id], onDelete: Cascade)
 
-  @@map("notificacoes")
+   @@map("notificacoes")
+}
+
+model Financiador {
+   id       Int     @id @default(autoincrement())
+   eventoId Int     @map("evento_id")
+   tipo     String? @db.VarChar(20)
+   nome     String  @db.VarChar(150)
+
+   evento Evento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+
+   @@map("financiadores")
 }
