@@ -1,4 +1,4 @@
-const { formatarData, rotuloStatus, formatarFinanciador } = require('./helpers')
+const { formatarData, rotuloStatus, formatarFinanciadores } = require('./helpers')
 
 const eventoCriadoTemplate = ({ usuario, evento }) => {
    const presencial = evento.tipoEvento === 'presencial'
@@ -10,7 +10,7 @@ const eventoCriadoTemplate = ({ usuario, evento }) => {
 
    const aguardandoAprovacao = evento.status === 'rascunho'
    const statusLabel = aguardandoAprovacao ? 'Aguardando aprovacao do moderador' : rotuloStatus(evento.status)
-   const financiador = formatarFinanciador(evento)
+   const financiadores = formatarFinanciadores(evento)
    const subject = `Evento criado: ${evento.titulo}`
 
    const html = `
@@ -23,7 +23,7 @@ const eventoCriadoTemplate = ({ usuario, evento }) => {
             <li><strong>Fim:</strong> ${formatarData(evento.dataFim)}</li>
             <li><strong>${presencial ? 'Local' : 'Link'}:</strong> ${local}</li>
             <li><strong>Status:</strong> ${statusLabel}</li>
-            ${financiador ? `<li><strong>Financiador:</strong> ${financiador}</li>` : ''}
+            ${financiadores ? `<li><strong>${financiadores.rotulo}:</strong> ${financiadores.nomes}</li>` : ''}
          </ul>
          ${
             aguardandoAprovacao
@@ -44,7 +44,7 @@ const eventoCriadoTemplate = ({ usuario, evento }) => {
       `Fim: ${formatarData(evento.dataFim)}`,
       `${presencial ? 'Local' : 'Link'}: ${local}`,
       `Status: ${statusLabel}`,
-      financiador ? `Financiador: ${financiador}` : '',
+      financiadores ? `${financiadores.rotulo}: ${financiadores.nomes}` : '',
       aguardandoAprovacao ? 'Seu evento foi criado e esta aguardando aprovacao do moderador.' : '',
    ]
       .filter(Boolean)

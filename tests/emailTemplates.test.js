@@ -39,14 +39,30 @@ describe('eventoStatusAlteradoTemplate', () => {
       expect(t.text).not.toContain('Motivo do cancelamento')
    })
 
-   test('inclui o financiador quando informado', () => {
+   test('lista varios financiadores apenas pelo nome', () => {
       const t = eventoStatusAlteradoTemplate({
          ...base,
-         evento: { ...base.evento, financiadorTipo: 'publico', financiadorNome: 'MEC' },
+         evento: {
+            ...base.evento,
+            financiadores: [
+               { tipo: 'publico', nome: 'MEC' },
+               { tipo: 'privado', nome: 'FIEMT' },
+            ],
+         },
+      })
+      expect(t.html).toContain('Financiadores:')
+      expect(t.html).toContain('MEC, FIEMT')
+      expect(t.text).toContain('Financiadores: MEC, FIEMT')
+   })
+
+   test('um financiador usa o rotulo no singular e ignora o tipo', () => {
+      const t = eventoStatusAlteradoTemplate({
+         ...base,
+         evento: { ...base.evento, financiadores: [{ tipo: 'publico', nome: 'MEC' }] },
       })
       expect(t.html).toContain('Financiador:')
-      expect(t.html).toContain('Publico - MEC')
-      expect(t.text).toContain('Financiador: Publico - MEC')
+      expect(t.html).not.toContain('Publico')
+      expect(t.text).toContain('Financiador: MEC')
    })
 
    test('nao inclui financiador quando ausente', () => {
@@ -90,14 +106,20 @@ describe('eventoCriadoTemplate', () => {
       expect(t.text).not.toContain('aguardando aprovacao do moderador')
    })
 
-   test('inclui o financiador quando informado', () => {
+   test('lista varios financiadores apenas pelo nome', () => {
       const t = eventoCriadoTemplate({
          ...base,
-         evento: { ...base.evento, financiadorTipo: 'hibrido', financiadorNome: 'Fulano de Tal' },
+         evento: {
+            ...base.evento,
+            financiadores: [
+               { tipo: 'hibrido', nome: 'Fulano de Tal' },
+               { nome: 'Beltrano' },
+            ],
+         },
       })
-      expect(t.html).toContain('Financiador:')
-      expect(t.html).toContain('Hibrido - Fulano de Tal')
-      expect(t.text).toContain('Financiador: Hibrido - Fulano de Tal')
+      expect(t.html).toContain('Financiadores:')
+      expect(t.html).toContain('Fulano de Tal, Beltrano')
+      expect(t.text).toContain('Financiadores: Fulano de Tal, Beltrano')
    })
 
    test('nao inclui financiador quando ausente', () => {
