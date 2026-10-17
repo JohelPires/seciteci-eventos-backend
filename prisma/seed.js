@@ -656,9 +656,17 @@ async function main() {
       },
    ]
 
-   for (const evento of eventos) {
+   for (const { financiadorTipo, financiadorNome, ...evento } of eventos) {
       await prisma.evento.create({
-         data: evento,
+         data: {
+            ...evento,
+            financiadores: {
+               create:
+                  financiadorNome || financiadorTipo
+                     ? [{ tipo: financiadorTipo ?? null, nome: financiadorNome ?? 'Nao informado' }]
+                     : [],
+            },
+         },
       })
    }
 
