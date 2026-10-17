@@ -151,15 +151,22 @@ const formatarFinanciadores = (evento) => {
    const nomes = lista
       .map((f) => (f?.nome || '').trim())
       .filter(Boolean)
-   return nomes.length ? nomes.join(', ') : null
+   if (!nomes.length) return null
+   return {
+      rotulo: nomes.length > 1 ? 'Financiadores' : 'Financiador',
+      nomes: nomes.join(', '),
+   }
 }
 ```
 
-  (só nomes, ignorando `tipo`; `null` quando não há financiadores).
+  (só nomes, ignorando `tipo`; `null` quando não há financiadores; `rotulo`
+  resolve singular/plural para os templates).
 
 ### `services/emailTemplates/eventoCriado.js` e `eventoStatusAlterado.js`
 
-- Usar `formatarFinanciadores`; rótulo singular/plural conforme a quantidade:
+- Usar `formatarFinanciadores`; o helper devolve `{ rotulo, nomes }` ou `null`,
+  preservando o formato atual do markup (`<strong>${rotulo}:</strong> ${nomes}`
+  no html; `${rotulo}: ${nomes}` no text):
   - 1 financiador → `Financiador: MEC`;
   - vários → `Financiadores: MEC, FIEMT`;
   - nenhum → bloco/linha omitidos (como hoje).
