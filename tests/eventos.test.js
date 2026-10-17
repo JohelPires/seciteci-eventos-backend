@@ -534,4 +534,55 @@ describe('financiadores', () => {
     expect(res.statusCode).toBe(400)
     expect(Array.isArray(res.body.errors)).toBe(true)
   })
+
+  test('GET /api/eventos (lista) inclui financiadores', async () => {
+    const user = await createUser()
+    const evento = await createEvento(user.id)
+    await prisma.financiador.create({
+      data: { eventoId: evento.id, tipo: 'publico', nome: 'MEC' },
+    })
+
+    const res = await request(app).get('/api/eventos')
+
+    expect(res.statusCode).toBe(200)
+    const encontrado = res.body.eventos.find((e) => e.id === evento.id)
+    expect(encontrado.financiadores.map((f) => f.nome)).toEqual(['MEC'])
+  })
+
+  test('GET /api/eventos/:id inclui financiadores', async () => {
+    const user = await createUser()
+    const evento = await createEvento(user.id)
+    await prisma.financiador.create({ data: { eventoId: evento.id, nome: 'UFMT' } })
+
+    const res = await request(app).get(`/api/eventos/${evento.id}`)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.evento.financiadores.map((f) => f.nome)).toEqual(['UFMT'])
+  })
+
+  test('GET /api/meus-eventos inclui financiadores', async () => {
+    const user = await createUser()
+    const evento = await createEvento(user.id)
+    await prisma.financiador.create({ data: { eventoId: evento.id, nome: 'Sebrae' } })
+
+    const res = await request(app)
+      .get('/api/meus-eventos')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.eventos[0].financiadores.map((f) => f.nome)).toEqual(['Sebrae'])
+  })
+
+  test('DELETE do evento remove os financiadores (cascade)', async () => {
+    const owner = await createUser()
+    const evento = await createEvento(owner.id)
+    await prisma.financiador.create({ data: { eventoId: evento.id, nome: 'MEC' } })
+
+    const res = await request(app)
+      .delete(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+
+    expect(res.statusCode).toBe(200)
+    expect(await prisma.financiador.count({ where: { eventoId: evento.id } })).toBe(0)
+  })
 })

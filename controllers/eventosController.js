@@ -53,6 +53,7 @@ const getEventos = async (req, res) => {
             where,
             include: {
                categoria: true,
+               financiadores: { orderBy: { id: 'asc' } },
             },
             orderBy: { dataInicio: 'asc' },
             skip: parseInt(skip),
@@ -100,6 +101,7 @@ const getEventoById = async (req, res) => {
          where: { id: parseInt(id) },
          include: {
             categoria: true,
+            financiadores: { orderBy: { id: 'asc' } },
             organizador: {
                select: {
                   id: true,
@@ -386,6 +388,7 @@ const getMeusEventos = async (req, res) => {
          where: { organizadorId: req.userId },
          include: {
             categoria: true,
+            financiadores: { orderBy: { id: 'asc' } },
             _count: {
                select: {
                   inscricoes: true,
@@ -436,6 +439,7 @@ const getEventosDestaque = async (req, res) => {
          },
          include: {
             categoria: true,
+            financiadores: { orderBy: { id: 'asc' } },
             organizador: {
                select: {
                   id: true,
