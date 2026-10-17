@@ -352,7 +352,7 @@
  *     tags:
  *       - Eventos
  *     summary: Detalhes do evento
- *     description: Retorna informações completas incluindo programação e avaliações
+ *     description: Retorna informações completas incluindo programação, avaliações e financiadores
  *     parameters:
  *       - in: path
  *         name: id
@@ -374,7 +374,7 @@
  *     tags:
  *       - Eventos
  *     summary: Criar evento
- *     description: Cria um novo evento. Qualquer usuário autenticado pode criar, mas o evento nasce sempre como rascunho; apenas administradores podem criá-lo já como publicado.
+ *     description: Cria um novo evento. Qualquer usuário autenticado pode criar, mas o evento nasce sempre como rascunho; apenas administradores podem criá-lo já como publicado. Aceita "financiadores" (lista de {nome, tipo}); a resposta devolve o evento com financiadores.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -487,14 +487,22 @@
  *                 type: string
  *               requisitos:
  *                 type: string
- *               financiadorTipo:
- *                 type: string
- *                 enum: [publico, privado, hibrido]
- *                 description: Natureza do financiador do evento
- *               financiadorNome:
- *                 type: string
- *                 example: Governo do Estado de Mato Grosso
- *                 description: Nome do financiador do evento
+ *               financiadores:
+ *                 type: array
+ *                 maxItems: 20
+ *                 description: Lista de financiadores do evento. Cada item exige "nome"; "tipo" é opcional (publico, privado ou hibrido). A resposta devolve o evento com financiadores.
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - nome
+ *                   properties:
+ *                     nome:
+ *                       type: string
+ *                       maxLength: 150
+ *                       example: Governo do Estado de Mato Grosso
+ *                     tipo:
+ *                       type: string
+ *                       enum: [publico, privado, hibrido]
  *     responses:
  *       201:
  *         description: Evento criado com sucesso
@@ -511,7 +519,7 @@
  *     tags:
  *       - Eventos
  *     summary: Atualizar evento
- *     description: Atualiza informações de um evento (dono do evento ou admin). Apenas administradores podem mudar o status para publicado; os demais ficam restritos a rascunho/cancelado/encerrado. Aceita "motivoCancelamento" (opcional, máx. 1000 caracteres), limpo automaticamente quando o evento deixa de estar cancelado. Campos que não são colunas do evento (ex.: objeto completo do GET com categoria/organizador/_count) são ignorados; categoriaId, datas, horários e números podem vir como string e são convertidos. Campos não reconhecidos retornam 400; em NODE_ENV=development a resposta de erro traz o campo detalhe com a mensagem crua.
+ *     description: Atualiza informações de um evento (dono do evento ou admin). Apenas administradores podem mudar o status para publicado; os demais ficam restritos a rascunho/cancelado/encerrado. Aceita "motivoCancelamento" (opcional, máx. 1000 caracteres), limpo automaticamente quando o evento deixa de estar cancelado. Aceita "financiadores" (lista de {nome, tipo}); enviar o array substitui todos os financiadores do evento, omitir a chave mantém os atuais. Campos que não são colunas do evento (ex.: objeto completo do GET com categoria/organizador/_count) são ignorados; categoriaId, datas, horários e números podem vir como string e são convertidos. Campos não reconhecidos retornam 400; em NODE_ENV=development a resposta de erro traz o campo detalhe com a mensagem crua.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -556,13 +564,22 @@
  *                 type: number
  *               LocalLongitude:
  *                 type: number
- *               financiadorTipo:
- *                 type: string
- *                 enum: [publico, privado, hibrido]
- *                 description: Natureza do financiador do evento
- *               financiadorNome:
- *                 type: string
- *                 description: Nome do financiador do evento
+ *               financiadores:
+ *                 type: array
+ *                 maxItems: 20
+ *                 description: Lista de financiadores do evento. Enviar o array substitui todos os financiadores existentes; omitir a chave mantém os atuais. Cada item exige "nome"; "tipo" é opcional (publico, privado ou hibrido).
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - nome
+ *                   properties:
+ *                     nome:
+ *                       type: string
+ *                       maxLength: 150
+ *                       example: Governo do Estado de Mato Grosso
+ *                     tipo:
+ *                       type: string
+ *                       enum: [publico, privado, hibrido]
  *     responses:
  *       200:
  *         description: Evento atualizado
