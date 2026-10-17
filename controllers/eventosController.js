@@ -248,6 +248,14 @@ const updateEvento = async (req, res) => {
       // tipos (categoriaId string, datas, horários, números).
       const dadosAtualizacao = sanitizeEventoInput(req.body)
 
+      // financiadores: array presente substitui todos (deleteMany + create no
+      // mesmo update atômico); ausente/falsy => sanitizeFinanciadores devolve
+      // undefined e nada muda.
+      const financiadores = sanitizeFinanciadores(req.body)
+      if (financiadores !== undefined) {
+         dadosAtualizacao.financiadores = { deleteMany: {}, create: financiadores }
+      }
+
       // Normalizar e validar o motivo de cancelamento
       if (
          dadosAtualizacao.motivoCancelamento !== undefined &&
@@ -290,6 +298,7 @@ const updateEvento = async (req, res) => {
          data: dadosAtualizacao,
          include: {
             categoria: true,
+            financiadores: { orderBy: { id: 'asc' } },
             organizador: {
                select: {
                   id: true,

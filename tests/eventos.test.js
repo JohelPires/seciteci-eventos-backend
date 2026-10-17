@@ -459,4 +459,79 @@ describe('financiadores', () => {
     expect(res.statusCode).toBe(400)
     expect(Array.isArray(res.body.errors)).toBe(true)
   })
+
+  test('PUT com novo array substitui os financiadores', async () => {
+    const owner = await createUser()
+    const criado = await request(app)
+      .post('/api/eventos')
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send(eventoPayload({ financiadores: [{ nome: 'Antigo' }] }))
+    const evento = criado.body.evento
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send({
+        financiadores: [
+          { tipo: 'privado', nome: 'Novo A' },
+          { nome: 'Novo B' },
+        ],
+      })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.evento.financiadores.map((f) => f.nome)).toEqual(['Novo A', 'Novo B'])
+    expect(await prisma.financiador.count({ where: { eventoId: evento.id } })).toBe(2)
+  })
+
+  test('PUT sem a chave financiadores mantém os existentes', async () => {
+    const owner = await createUser()
+    const criado = await request(app)
+      .post('/api/eventos')
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send(eventoPayload({ financiadores: [{ nome: 'Permanente' }] }))
+    const evento = criado.body.evento
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send({ titulo: 'Só muda o título' })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.evento.financiadores.map((f) => f.nome)).toEqual(['Permanente'])
+  })
+
+  test('PUT com [] limpa todos os financiadores', async () => {
+    const owner = await createUser()
+    const criado = await request(app)
+      .post('/api/eventos')
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send(eventoPayload({ financiadores: [{ nome: 'Vai sumir' }] }))
+    const evento = criado.body.evento
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send({ financiadores: [] })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.evento.financiadores).toEqual([])
+    expect(await prisma.financiador.count({ where: { eventoId: evento.id } })).toBe(0)
+  })
+
+  test('PUT com financiadores nao-array -> 400', async () => {
+    const owner = await createUser()
+    const criado = await request(app)
+      .post('/api/eventos')
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send(eventoPayload())
+    const evento = criado.body.evento
+
+    const res = await request(app)
+      .put(`/api/eventos/${evento.id}`)
+      .set('Authorization', `Bearer ${tokenFor(owner)}`)
+      .send({ financiadores: 'MEC' })
+
+    expect(res.statusCode).toBe(400)
+    expect(Array.isArray(res.body.errors)).toBe(true)
+  })
 })
