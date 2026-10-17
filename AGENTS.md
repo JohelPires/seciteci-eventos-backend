@@ -27,6 +27,7 @@ No lint or typecheck exist. `teste.js` is scratch algorithm practice, not a test
 - **Push na `main` (protegida) sobe automaticamente** (`publicar:producao` com rules override; o template deixaria manual). Rollback: re-run da pipeline de um commit anterior.
 - Segredos: variável **`APP_ENV`** (tipo **File**, escopo `producao`) no GitLab — conteúdo é o `.env` do ambiente (DATABASE_URL do Postgres próprio, JWT_SECRET, SMTP…). Nada secreto no repo.
 - Banco: Postgres **próprio** declarado no `compose.yml` (banco `sistema_eventos` criado pelo compose, senha via `APP_ENV`); **sem backup automático** (follow-up pendente). Migrations rodam no boot do container (`Dockerfile` CMD).
+- Rollback da migração `financiador como tabela`: ver `docs/rollback-financiadores-como-tabela.md` (SQL reverso manual; re-run da pipeline de commit anterior só volta a imagem, não o schema).
 - Na VM, só existem `/opt/apps/conectese-api/prod/{compose.yml,.env}` — o código nunca vai para lá; a imagem é buildada no runner. Logs: `docker compose logs` via admin/RISC (sem acesso SSH do dev).
 - Swagger is hand-written in `docs/swagger.routes.js`, not generated. Update it manually when endpoints change.
 - `docs/swagger.routes.js` documents `/api/eventos/destaque` and `/api/eventos/por-cidade`, but neither is in `routes/index.js`; `getEventosDestaque`/`getEventosPorCidade` in `eventosController.js` are unused. Trust `routes/index.js` over the docs.
