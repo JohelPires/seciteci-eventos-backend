@@ -32,6 +32,7 @@ const financiadoresValidator = [
     .optional({ values: "falsy" })
     .custom((valor) => Array.isArray(valor))
     .withMessage("Financiadores deve ser um array")
+    .bail()
     .custom((valor) => valor.length <= 20)
     .withMessage("Máximo de 20 financiadores por evento"),
   body("financiadores.*.nome")
