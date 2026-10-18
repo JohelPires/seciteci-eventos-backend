@@ -27,8 +27,8 @@ const getUsuarios = async (req, res) => {
          where.tipoUsuario = tipoUsuario
       }
 
-      if (ativo) {
-         where.ativo = ativo
+      if (ativo !== undefined) {
+         where.ativo = ativo === 'true'
       }
 
       if (busca) {
@@ -43,6 +43,17 @@ const getUsuarios = async (req, res) => {
       const [usuarios, total] = await Promise.all([
          prisma.usuario.findMany({
             where,
+            select: {
+               id: true,
+               nome: true,
+               email: true,
+               telefone: true,
+               cpf: true,
+               tipoUsuario: true,
+               ativo: true,
+               dataCadastro: true,
+               ultimoAcesso: true,
+            },
             orderBy: { nome: 'asc' },
             skip: parseInt(skip),
             take: parseInt(limit),
