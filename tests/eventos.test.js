@@ -573,6 +573,24 @@ describe('financiadores', () => {
     expect(res.body.eventos[0].financiadores.map((f) => f.nome)).toEqual(['Sebrae'])
   })
 
+  test('GET /api/meus-eventos lista paginada e só do dono', async () => {
+    const user = await createUser()
+    const outro = await createUser()
+    for (let i = 0; i < 2; i++) {
+      await createEvento(user.id, { titulo: `Meu-${i}` })
+    }
+    await createEvento(outro.id, { titulo: 'De outro' })
+
+    const res = await request(app)
+      .get('/api/meus-eventos?limit=1&page=2')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.eventos).toHaveLength(1)
+    expect(res.body.eventos[0].titulo).toMatch(/^Meu-/)
+    expect(res.body.pagination).toEqual({ page: 2, limit: 1, total: 2, totalPages: 2 })
+  })
+
   test('DELETE do evento remove os financiadores (cascade)', async () => {
     const owner = await createUser()
     const evento = await createEvento(owner.id)

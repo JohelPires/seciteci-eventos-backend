@@ -627,12 +627,26 @@
  *     tags:
  *       - Eventos
  *     summary: Meus eventos
- *     description: Lista eventos criados pelo usuário autenticado
+ *     description: Lista paginada de eventos criados pelo usuário autenticado
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *           maximum: 100
  *     responses:
  *       200:
- *         description: Lista de eventos do usuário
+ *         description: Lista de eventos do usuário com paginação
  *       401:
  *         description: Não autenticado
  */

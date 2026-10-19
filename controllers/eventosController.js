@@ -384,22 +384,39 @@ const deleteEvento = async (req, res) => {
 
 const getMeusEventos = async (req, res) => {
    try {
-      const eventos = await prisma.evento.findMany({
-         where: { organizadorId: req.userId },
-         include: {
-            categoria: true,
-            financiadores: { orderBy: { id: 'asc' } },
-            _count: {
-               select: {
-                  inscricoes: true,
-                  avaliacoes: true,
+      const { page = 1, limit = 10 } = req.query
+      const skip = (page - 1) * limit
+      const where = { organizadorId: req.userId }
+
+      const [eventos, total] = await Promise.all([
+         prisma.evento.findMany({
+            where,
+            include: {
+               categoria: true,
+               financiadores: { orderBy: { id: 'asc' } },
+               _count: {
+                  select: {
+                     inscricoes: true,
+                     avaliacoes: true,
+                  },
                },
             },
-         },
-         orderBy: { dataCriacao: 'desc' },
-      })
+            orderBy: { dataCriacao: 'desc' },
+            skip: parseInt(skip),
+            take: parseInt(limit),
+         }),
+         prisma.evento.count({ where }),
+      ])
 
-      res.json({ eventos })
+      res.json({
+         eventos,
+         pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total,
+            totalPages: Math.ceil(total / limit),
+         },
+      })
    } catch (error) {
       console.error('Erro ao buscar meus eventos:', error)
       res.status(500).json({ error: 'Erro ao buscar eventos' })
