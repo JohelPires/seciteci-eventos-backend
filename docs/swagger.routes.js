@@ -248,12 +248,83 @@
  *     tags:
  *       - Autenticação
  *     summary: Listar usuários
- *     description: Retorna lista paginada de usuários
+ *     description: Retorna lista paginada de usuários. Permite filtros exatos (nome, email, telefone, cpf, tipoUsuario, ativo) e busca parcial (busca). Exige admin.
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: nome
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: email
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: telefone
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: cpf
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: tipoUsuario
+ *         schema:
+ *           type: string
+ *           enum: [participante, organizador, admin]
+ *       - in: query
+ *         name: ativo
+ *         schema:
+ *           type: string
+ *           enum: [true, false]
+ *         description: Filtrar por situacao da conta
+ *       - in: query
+ *         name: busca
+ *         schema:
+ *           type: string
+ *         description: Busca parcial (case-insensitive) por nome, email, telefone ou cpf
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *           minimum: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Valores fora do intervalo ou invalidos sao ajustados (page<1 vira 1; limit limitado a 1..100)
  *     responses:
  *       200:
- *         description: Lista de usuários
+ *         description: Lista de usuários com paginação
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 usuarios:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *       401:
+ *         description: Não autenticado
+ *       403:
+ *         description: Acesso negado. Apenas administradores.
  */
 
 /**

@@ -97,6 +97,24 @@ describe('rotas de admin', () => {
     expect(res.body.pagination.total).toBeGreaterThanOrEqual(2)
   })
 
+  test('GET /api/usuarios sanitiza page/limit (clamp 1..100, NaN -> default)', async () => {
+    const admin = await createUser({ tipoUsuario: 'admin' })
+
+    const clamado = await request(app)
+      .get('/api/usuarios?page=0&limit=500')
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+    expect(clamado.statusCode).toBe(200)
+    expect(clamado.body.pagination.page).toBe(1)
+    expect(clamado.body.pagination.limit).toBe(100)
+
+    const invalido = await request(app)
+      .get('/api/usuarios?page=abc&limit=xyz')
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+    expect(invalido.statusCode).toBe(200)
+    expect(invalido.body.pagination.page).toBe(1)
+    expect(invalido.body.pagination.limit).toBe(10)
+  })
+
   test('admin promove participante e login emite novo token admin', async () => {
     const admin = await createUser({ tipoUsuario: 'admin' })
     const user = await createUser({ email: 'promover@teste.com' })
