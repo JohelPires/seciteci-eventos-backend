@@ -393,13 +393,18 @@
  *         schema:
  *           type: string
  *           enum: [presencial, online, hibrido]
- *       - in: query
- *         name: busca
- *         schema:
- *           type: string
- *         description: Buscar por título, descrição, cidade ou nome do local
- *       - in: query
- *         name: page
+  *       - in: query
+  *         name: busca
+  *         schema:
+  *           type: string
+  *         description: Buscar por título, descrição, cidade ou nome do local
+  *       - in: query
+  *         name: proximos
+  *         schema:
+  *           type: boolean
+  *         description: "Quando true, retorna apenas eventos que terminam hoje ou depois (dataFim >= início de hoje no fuso do servidor)"
+  *       - in: query
+  *         name: page
  *         schema:
  *           type: integer
  *           default: 1

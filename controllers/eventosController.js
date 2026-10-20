@@ -10,10 +10,15 @@ const { sanitizeEventoInput, sanitizeFinanciadores, respondPrismaError } = requi
 
 const getEventos = async (req, res) => {
    try {
-      const { categoria, cidade, status, tipo, busca, page = 1, limit = 10 } = req.query
+      const { categoria, cidade, status, tipo, busca, proximos, page = 1, limit = 10 } = req.query
 
-      // Criar uma chave única com base nos filtros
-      const cacheKey = `eventos:${JSON.stringify(req.query)}`
+      const proximosAtivo = proximos === 'true' || proximos === '1'
+
+      // Criar uma chave única com base nos filtros (inclui a data do dia quando
+      // proximos=true, para o cache nunca servir eventos de ontem como "hoje em diante")
+      const cacheKey = proximosAtivo
+         ? `eventos:${JSON.stringify(req.query)}:${new Date().toISOString().slice(0, 10)}`
+         : `eventos:${JSON.stringify(req.query)}`
       const cachedData = cacheEnabled() ? cache.get(cacheKey) : null
 
       if (cachedData) {
@@ -33,6 +38,12 @@ const getEventos = async (req, res) => {
 
       if (status) {
          where.status = status
+      }
+
+      if (proximosAtivo) {
+         const inicioDeHoje = new Date()
+         inicioDeHoje.setHours(0, 0, 0, 0)
+         where.dataFim = { gte: inicioDeHoje }
       }
 
       if (tipo) {

@@ -101,6 +101,52 @@ describe('GET /api/eventos', () => {
     expect(res.body.eventos.some((e) => e.titulo === 'Semana de Inovacao Tech')).toBe(true)
     expect(res.body.eventos.some((e) => e.titulo === 'Outro Titulo')).toBe(false)
   })
+
+  test('filtro ?proximos=true exclui eventos que já terminaram', async () => {
+    const user = await createUser()
+
+    const ontem = new Date(Date.now() - emUmDia)
+    await createEvento(user.id, {
+      titulo: 'Passado',
+      dataInicio: new Date(Date.now() - 2 * emUmDia).toISOString(),
+      dataFim: ontem.toISOString(),
+    })
+
+    // evento em andamento: começou ontem e termina hoje
+    const hoje = new Date()
+    hoje.setHours(23, 59, 59, 999)
+    await createEvento(user.id, {
+      titulo: 'Hoje',
+      dataInicio: new Date(Date.now() - emUmDia).toISOString(),
+      dataFim: hoje.toISOString(),
+    })
+
+    await createEvento(user.id, { titulo: 'Futuro' })
+
+    const res = await request(app).get('/api/eventos?proximos=true')
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.pagination.total).toBe(2)
+    expect(res.body.eventos.some((e) => e.titulo === 'Hoje')).toBe(true)
+    expect(res.body.eventos.some((e) => e.titulo === 'Futuro')).toBe(true)
+    expect(res.body.eventos.some((e) => e.titulo === 'Passado')).toBe(false)
+  })
+
+  test('query ?proximos=false mantém comportamento padrão', async () => {
+    const user = await createUser()
+    const ontem = new Date(Date.now() - emUmDia)
+    await createEvento(user.id, {
+      titulo: 'Passado',
+      dataInicio: new Date(Date.now() - 2 * emUmDia).toISOString(),
+      dataFim: ontem.toISOString(),
+    })
+
+    const res = await request(app).get('/api/eventos?proximos=false')
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.pagination.total).toBe(1)
+    expect(res.body.eventos[0].titulo).toBe('Passado')
+  })
 })
 
 describe('GET /api/eventos/:id', () => {
