@@ -411,6 +411,18 @@
   *           default: desc
   *         description: "Direção da ordenação por data de início (padrão: mais recentes primeiro)"
   *       - in: query
+  *         name: mes
+  *         schema:
+  *           type: integer
+  *           minimum: 1
+  *           maximum: 12
+  *         description: "Filtrar eventos cuja data de início está no mês (1=janeiro … 12=dezembro). Valores fora de 1-12 são ignorados."
+  *       - in: query
+  *         name: ano
+  *         schema:
+  *           type: integer
+  *         description: "Ano do filtro de mês; padrão é o ano corrente. Só tem efeito junto com mes."
+  *       - in: query
   *         name: page
  *         schema:
  *           type: integer

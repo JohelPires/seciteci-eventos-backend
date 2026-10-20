@@ -10,18 +10,32 @@ const { sanitizeEventoInput, sanitizeFinanciadores, respondPrismaError } = requi
 
 const getEventos = async (req, res) => {
    try {
-      const { categoria, cidade, status, tipo, busca, proximos, ordem, page = 1, limit = 10 } = req.query
+      const { categoria, cidade, status, tipo, busca, proximos, ordem, mes, ano, page = 1, limit = 10 } = req.query
 
       const proximosAtivo = proximos === 'true' || proximos === '1'
 
       // Padrão: mais recentes primeiro; qualquer valor que não seja "asc" cai em "desc"
       const direcaoDataInicio = ordem === 'asc' ? 'asc' : 'desc'
 
+      // Filtro por mês/ano: mes deve ser inteiro de 1 a 12 (silenciosamente ignorado
+      // caso contrário); ano só tem efeito com mes e cai no ano corrente se inválido
+      const mesNum = parseInt(mes, 10)
+      const mesAtivo = Number.isInteger(mesNum) && mesNum >= 1 && mesNum <= 12
+      const anoNum = parseInt(ano, 10)
+      const anoUsado =
+         mesAtivo && Number.isInteger(anoNum) && anoNum >= 1900 && anoNum <= 9999
+            ? anoNum
+            : new Date().getFullYear()
+
       // Criar uma chave única com base nos filtros (inclui a data do dia quando
-      // proximos=true, para o cache nunca servir eventos de ontem como "hoje em diante")
+      // proximos=true, para o cache nunca servir eventos de ontem como "hoje em diante";
+      // inclui o ano resolvido quando mes está ativo, para não servir o filtro do ano
+      // anterior na virada do ano)
       const cacheKey = proximosAtivo
          ? `eventos:${JSON.stringify(req.query)}:${new Date().toISOString().slice(0, 10)}`
-         : `eventos:${JSON.stringify(req.query)}`
+         : mesAtivo
+           ? `eventos:${JSON.stringify(req.query)}:${anoUsado}`
+           : `eventos:${JSON.stringify(req.query)}`
       const cachedData = cacheEnabled() ? cache.get(cacheKey) : null
 
       if (cachedData) {
@@ -41,6 +55,13 @@ const getEventos = async (req, res) => {
 
       if (status) {
          where.status = status
+      }
+
+      if (mesAtivo) {
+         where.dataInicio = {
+            gte: new Date(anoUsado, mesNum - 1, 1),
+            lt: new Date(anoUsado, mesNum, 1),
+         }
       }
 
       if (proximosAtivo) {

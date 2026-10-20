@@ -190,6 +190,87 @@ describe('GET /api/eventos (ordenacao por data)', () => {
   })
 })
 
+describe('GET /api/eventos (filtro por mes)', () => {
+  const anoAtual = new Date().getFullYear()
+  const dataMes = (ano, mes0Based, dia, hora) => {
+    const d = new Date(ano, mes0Based, dia, hora, 0, 0, 0)
+    return d.toISOString()
+  }
+
+  test('filtro ?mes=9 retorna só eventos com dataInicio em setembro do ano corrente', async () => {
+    const user = await createUser()
+    await createEvento(user.id, {
+      titulo: 'Setembro',
+      dataInicio: dataMes(anoAtual, 8, 10, 12),
+    })
+    await createEvento(user.id, {
+      titulo: 'Outubro',
+      dataInicio: dataMes(anoAtual, 9, 10, 12),
+    })
+
+    const res = await request(app).get('/api/eventos?mes=9')
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.pagination.total).toBe(1)
+    expect(res.body.eventos[0].titulo).toBe('Setembro')
+  })
+
+  test('limites do mes: 30/09 23:59 incluido, 01/10 00:00 excluido', async () => {
+    const user = await createUser()
+    await createEvento(user.id, {
+      titulo: 'Ultima hora',
+      dataInicio: dataMes(anoAtual, 8, 30, 23),
+    })
+    await createEvento(user.id, {
+      titulo: 'Primeira hora',
+      dataInicio: dataMes(anoAtual, 9, 1, 0),
+    })
+
+    const res = await request(app).get('/api/eventos?mes=9')
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.pagination.total).toBe(1)
+    expect(res.body.eventos[0].titulo).toBe('Ultima hora')
+  })
+
+  test('?ano com ?mes filtra o ano informado', async () => {
+    const user = await createUser()
+    await createEvento(user.id, {
+      titulo: 'Setembro 2020',
+      dataInicio: dataMes(2020, 8, 10, 12),
+      dataFim: dataMes(2020, 8, 15, 12),
+    })
+    await createEvento(user.id, {
+      titulo: 'Setembro corrente',
+      dataInicio: dataMes(anoAtual, 8, 10, 12),
+    })
+
+    const res = await request(app).get('/api/eventos?mes=9&ano=2020')
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.pagination.total).toBe(1)
+    expect(res.body.eventos[0].titulo).toBe('Setembro 2020')
+  })
+
+  test('mes e ano invalidos sao ignorados', async () => {
+    const user = await createUser()
+    await createEvento(user.id, { titulo: 'Qualquer' })
+
+    const resMes13 = await request(app).get('/api/eventos?mes=13')
+    expect(resMes13.statusCode).toBe(200)
+    expect(resMes13.body.pagination.total).toBe(1)
+    expect(resMes13.body.eventos[0].titulo).toBe('Qualquer')
+
+    const resMesAbc = await request(app).get('/api/eventos?mes=abc')
+    expect(resMesAbc.statusCode).toBe(200)
+    expect(resMesAbc.body.pagination.total).toBe(1)
+
+    const resAnoSozinho = await request(app).get('/api/eventos?ano=2020')
+    expect(resAnoSozinho.statusCode).toBe(200)
+    expect(resAnoSozinho.body.pagination.total).toBe(1)
+  })
+})
+
 describe('GET /api/eventos/:id', () => {
   test('detalhe inclui organizador', async () => {
     const user = await createUser({ nome: 'Org Detalhe' })
