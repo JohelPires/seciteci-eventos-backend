@@ -404,6 +404,13 @@
   *           type: boolean
   *         description: "Quando true, retorna apenas eventos que terminam hoje ou depois (dataFim >= início de hoje no fuso do servidor)"
   *       - in: query
+  *         name: ordem
+  *         schema:
+  *           type: string
+  *           enum: [asc, desc]
+  *           default: desc
+  *         description: "Direção da ordenação por data de início (padrão: mais recentes primeiro)"
+  *       - in: query
   *         name: page
  *         schema:
  *           type: integer

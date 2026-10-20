@@ -10,9 +10,12 @@ const { sanitizeEventoInput, sanitizeFinanciadores, respondPrismaError } = requi
 
 const getEventos = async (req, res) => {
    try {
-      const { categoria, cidade, status, tipo, busca, proximos, page = 1, limit = 10 } = req.query
+      const { categoria, cidade, status, tipo, busca, proximos, ordem, page = 1, limit = 10 } = req.query
 
       const proximosAtivo = proximos === 'true' || proximos === '1'
+
+      // Padrão: mais recentes primeiro; qualquer valor que não seja "asc" cai em "desc"
+      const direcaoDataInicio = ordem === 'asc' ? 'asc' : 'desc'
 
       // Criar uma chave única com base nos filtros (inclui a data do dia quando
       // proximos=true, para o cache nunca servir eventos de ontem como "hoje em diante")
@@ -66,7 +69,7 @@ const getEventos = async (req, res) => {
                categoria: true,
                financiadores: { orderBy: { id: 'asc' } },
             },
-            orderBy: { dataInicio: 'asc' },
+            orderBy: [{ dataInicio: direcaoDataInicio }, { id: 'asc' }],
             skip: parseInt(skip),
             take: parseInt(limit),
          }),

@@ -149,6 +149,47 @@ describe('GET /api/eventos', () => {
   })
 })
 
+describe('GET /api/eventos (ordenacao por data)', () => {
+  const criarTresEventos = async () => {
+    const user = await createUser()
+    const titulos = ['Antigo', 'Meio', 'Novo']
+    for (let i = 0; i < 3; i++) {
+      await createEvento(user.id, {
+        titulo: titulos[i],
+        dataInicio: new Date(Date.now() + (i - 1) * emUmDia).toISOString(),
+      })
+    }
+    return titulos
+  }
+
+  test('padrao ordena por dataInicio desc (mais recentes primeiro)', async () => {
+    await criarTresEventos()
+
+    const res = await request(app).get('/api/eventos')
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.eventos.map((e) => e.titulo)).toEqual(['Novo', 'Meio', 'Antigo'])
+  })
+
+  test('?ordem=asc ordena das mais antigas para as mais recentes', async () => {
+    await criarTresEventos()
+
+    const res = await request(app).get('/api/eventos?ordem=asc')
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.eventos.map((e) => e.titulo)).toEqual(['Antigo', 'Meio', 'Novo'])
+  })
+
+  test('valor invalido em ordem cai no padrao desc', async () => {
+    await criarTresEventos()
+
+    const res = await request(app).get('/api/eventos?ordem=qualquer')
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.eventos.map((e) => e.titulo)).toEqual(['Novo', 'Meio', 'Antigo'])
+  })
+})
+
 describe('GET /api/eventos/:id', () => {
   test('detalhe inclui organizador', async () => {
     const user = await createUser({ nome: 'Org Detalhe' })
