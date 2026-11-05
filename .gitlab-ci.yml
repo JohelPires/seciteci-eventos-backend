@@ -27,7 +27,9 @@ variables:
 publicar:producao:
   extends: [.publicar-na-vm, .ambiente:producao]
   rules:
+    # TEMPORÁRIO (commit de diagnóstico): manual para não publicar de novo.
     - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
 
 # Seed do banco de produção (uma vez, botão): categorias base (Ciência,
 # Tecnologia, Inovação) + usuário admin. O e-mail/senha do admin vêm das
@@ -41,3 +43,33 @@ seed:producao:
       when: manual
   script:
     - docker compose -p conectese-api-prod -f /opt/apps/conectese-api/prod/compose.yml exec -T app npm run prisma:seed
+
+# DIAGNÓSTICO TEMPORÁRIO (read-only) no runner `portal-prod` da VM do MTI:
+# descobrir como é a máquina que atende conectese.secitec.mt.gov.br (.237),
+# se o Conecte-se roda nela e se a .240 alcança a .237. Sem deploy.
+# Uma reversão restaura o arquivo original e remove este job.
+diagnostico:mti:
+  stage: .pre
+  tags: [portal-prod]
+  interruptible: true
+  timeout: 6m
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - |
+      set +e
+      echo "### HOST"; hostname; hostname -I; uname -a; id; groups
+      echo "### SUDO"; (sudo -n true && echo "sudo sem senha: SIM") || echo "sudo sem senha: NAO"
+      echo "### REDE"; ip -4 addr; ip route
+      echo "### DOCKER"; docker info --format '{{.Name}} {{.ServerVersion}} {{.DockerRootDir}}'
+      docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}'
+      docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}' | grep -Ei 'conectese|evento|portal|next|api' || true
+      docker network ls
+      docker volume ls | grep -Ei 'conectese|evento|portal' || true
+      echo "### CONTAINERS CONECTE-SE"; for c in $(docker ps -a --format '{{.Names}}' | grep -Ei 'conectese|evento' || true); do docker inspect -f '{{.Name}} | imagem={{.Config.Image}} | redes={{json .NetworkSettings.Networks}} | labels={{json .Config.Labels}}' "$c"; done
+      echo "### PASTAS"; ls -ld /home/portal-inovacao /home/gitlab-runner; ls -la /home/portal-inovacao
+      echo "### ALCANCE .237"; for p in 22 80 443; do (timeout 3 bash -c "</dev/tcp/201.49.166.237/$p" && echo "porta $p: OK") || echo "porta $p: FALHOU"; done
+      echo "### HTTP .237"; curl -skI --max-time 10 https://conectese.secitec.mt.gov.br/ | head -20
+      curl -sk --max-time 10 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' https://conectese.secitec.mt.gov.br/api/eventos
+      echo "### DNS"; getent hosts conectese.secitec.mt.gov.br portaldainovacao.secitec.mt.gov.br
+      echo "### DISCO/MEMORIA"; df -h /; free -h
