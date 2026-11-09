@@ -59,20 +59,32 @@ diagnostico:conectese:
   script:
     - |
       set +e
-      echo "### HOST"; hostname; hostname -I; uname -a; id; groups
-      echo "### SUDO"; (sudo -n true && echo "sudo sem senha: SIM") || echo "sudo sem senha: NAO"
-      echo "### REDE"; ip -4 addr; ip route
-      echo "### DOCKER"; docker info --format '{{.Name}} {{.ServerVersion}} {{.DockerRootDir}}' 2>&1 | head -5
-      echo "### DOCKER PS"; docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}'
-      echo "### IMAGENS"; docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}' | head -60
-      echo "### REDES DOCKER"; docker network ls
-      echo "### VOLUMES DOCKER"; docker volume ls | head -60
-      echo "### LABELS DE PROJETO (cada container)"; for c in $(docker ps -aq 2>/dev/null); do docker inspect -f '{{.Name}} | projeto={{index .Config.Labels "com.docker.compose.project"}} | wd={{index .Config.Labels "com.docker.compose.project.working_dir"}} | cfg={{index .Config.Labels "com.docker.compose.project.config_files"}} | svc={{index .Config.Labels "com.docker.compose.service"}} | redes={{json .NetworkSettings.Networks}} | montagens={{json .Mounts}}' "$c"; done
-      echo "### COMPOSES"; find /home /opt /srv /var/www /etc /root -maxdepth 4 \( -iname 'compose*.y*ml' -o -iname 'docker-compose*.y*ml' \) 2>/dev/null
-      echo "### PASTAS RELEVANTES"; for d in /home /opt /srv /var/www; do ls -ld "$d" 2>/dev/null; for s in "$d"/*; do ls -ld "$s" 2>/dev/null; done; done
-      echo "### TRAEFIK"; docker ps --format '{{.Names}}' | grep -i traefik || true; ls -la /etc/traefik 2>/dev/null || true
-      echo "### HTTP LOCAL"; curl -skI --max-time 10 https://conectese.secitec.mt.gov.br/ 2>&1 | head -20
+      echo "### HOST"; hostname; hostname -I
+      echo "### COMPOSES (estrutural)"
+      for f in /home/conectese/docker-compose.yml /home/conectese/seciteci-eventos-backend/docker-compose.yml /home/conectese/seciteci-eventos-db/docker-compose.yml; do
+        echo "--- $f"
+        grep -nE 'image|container_name|restart|TZ|POSTGRES_USER|POSTGRES_DB|networks|external: true|volumes|^ *- [^#]*:/|labels|traefik|rule|entrypoint|priority|port|ports|healthcheck|depends|stop_grace|mem_limit|command|environment' "$f" 2>/dev/null || echo "(sem acesso)"
+      done
+      echo "### TRAEFIK ESTATICO"
+      ls -la /etc/traefik 2>/dev/null
+      for f in /etc/traefik/*; do [ -f "$f" ] && { echo "--- $f"; cat "$f" 2>/dev/null; }; done
+      echo "### LABELS DO BACKEND (container)"
+      docker inspect conectese.backend.api -f '{{json .Config.Labels}}'
+      echo "### LABELS DO FRONT (referencia)"
+      docker inspect conectese.frontend -f '{{json .Config.Labels}}'
+      echo "### BACKEND (state/health/redes/env-keys/cmd/mounts)"
+      docker inspect conectese.backend.api -f 'imagem={{json .Config.Image}} | cmd={{json .Config.Cmd}}'
+      docker inspect conectese.backend.api -f '{{json .State}}'
+      docker inspect conectese.backend.api -f '{{json .Health}}'
+      docker inspect conectese.backend.api -f '{{json .NetworkSettings.Networks}}'
+      docker inspect conectese.backend.api -f '{{json .Mounts}}'
+      echo "### ENV KEYS (so os nomes)"
+      docker inspect conectese.backend.api -f '{{range .Config.Env}}{{println .}}{{end}}' | cut -d= -f1
+      echo "### REDES"
+      docker network inspect traefik -f '{{json .Containers}}' 2>/dev/null
+      docker network inspect conectese-db-net -f '{{json .Containers}}' 2>/dev/null
+      echo "### APLICACAO DENTRO DO CONTAINER"
+      docker exec conectese.backend.api sh -c 'command -v wget >/dev/null && wget -qO- http://127.0.0.1:80/health || (command -v curl >/dev/null && curl -s http://127.0.0.1:80/health)'; echo
+      echo "### HTTP EXTERNO"
       curl -sk --max-time 10 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' https://conectese.secitec.mt.gov.br/api/eventos
-      echo "### DNS"; getent hosts conectese.secitec.mt.gov.br portaldainovacao.secitec.mt.gov.br
-      echo "### PORTAS LOCAIS"; (ss -ltn 2>/dev/null || netstat -ltn 2>/dev/null) | head -30
-      echo "### DISCO/MEMORIA"; df -h; free -h
+      curl -sk --max-time 10 -o /dev/null -w '/ HTTP %{http_code}\n' https://conectese.secitec.mt.gov.br/
