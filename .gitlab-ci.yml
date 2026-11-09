@@ -27,7 +27,6 @@ variables:
 publicar:producao:
   extends: [.publicar-na-vm, .ambiente:producao]
   rules:
-    # TEMPORÁRIO (commit de diagnóstico): manual para não publicar de novo.
     - if: $CI_COMMIT_BRANCH == "main"
       when: manual
 
@@ -44,15 +43,12 @@ seed:producao:
   script:
     - docker compose -p conectese-api-prod -f /opt/apps/conectese-api/prod/compose.yml exec -T app npm run prisma:seed
 
-# Publicação do BACKEND na VM do Conecte-se (runner `conectese-prod (.237)`,
-# projeto 688). Build da imagem, substituição do container
-# `conectese.backend.api` (mesmo nome/projeto/rede do compose de lá) e
-# verificação do /health. O banco de produção foi POPULADO ANTES do primeiro
-# `prisma migrate` rodar, então ao subir o banco a primeira vez o job executa
-# `prisma migrate resolve --applied` (baseline) para marcar as migrations.
-# O segredo (env_file com POSTGRES_*/DATABASE_URL/JWT_SECRET) é o mesmo do
-# container anterior, extraído pela pipeline uma única vez e gravado como
-# 600 em /home/gitlab-runner/conectese-api.env (fora do trace).
+# Publicação do BACKEND na VM do Conecte-se (SECITEC-29949, endereço
+# conectese.secitec.mt.gov.br) pelo runner de projeto `conectese-prod (.237)`.
+# A pipeline constrói a imagem e troca o container `conectese.backend.api`
+# (mesmo nome/projeto/rede do compose de lá); o .env do app vem extraído do
+# container anterior pela pipeline, gravado como 600 em
+# /home/gitlab-runner/conectese-api.env (fora do trace).
 publicar:producao:conectese:
   stage: deploy
   tags: [conectese-prod]
@@ -67,17 +63,12 @@ publicar:producao:conectese:
   script:
     - |
       set -e
-      echo "### marcando migrations faltantes como applied (o estado fisico do banco ja contem 1..6)"
-      for n in 20261014120000_adicionar_motivo_cancelamento_evento 20261017010406_financiador_como_tabela 20261006212902_adicionar_financiador_evento; do
-        docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" \
-          npx prisma migrate resolve --applied "$n" 2>&1 | tail -n 3 || true
-      done
-      echo "### migrate deploy (deve dizer 'No pending migrations')"
-      docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate deploy
-    - echo "### rebuild e subir"
-    - DOCKER_BUILDKIT=1 docker build -f Dockerfile -t "conectese-api:${CI_COMMIT_SHORT_SHA}" -t "conectese-api:latest" .
-    - docker compose -p seciteci-eventos-backend -f deploy/conectese/compose.yml up -d --force-recreate --wait --wait-timeout 240
-    - echo "### sanity check"
-    - docker exec conectese.backend.api wget -qO- http://127.0.0.1:80/health; echo
-    - curl -sk --max-time 15 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' 'https://conectese.secitec.mt.gov.br/api/eventos?limit=1'
-    - curl -sk --max-time 15 'https://conectese.secitec.mt.gov.br/api/eventos?limit=2' | head -c 400 ; echo
+      echo "### build da imagem"
+      DOCKER_BUILDKIT=1 docker build -f Dockerfile \
+        -t "conectese-api:${CI_COMMIT_SHORT_SHA}" -t "conectese-api:latest" .
+      echo "### subir (troca o container atual) + migrations rodando no CMD da imagem"
+      docker compose -p seciteci-eventos-backend \
+        -f deploy/conectese/compose.yml up -d --force-recreate --wait --wait-timeout 240
+      echo "### sanity check"
+      docker exec conectese.backend.api wget -qO- http://127.0.0.1:80/health; echo
+      curl -sk --max-time 15 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' 'https://conectese.secitec.mt.gov.br/api/eventos?limit=1'
