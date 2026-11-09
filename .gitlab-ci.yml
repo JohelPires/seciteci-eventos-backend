@@ -28,7 +28,6 @@ publicar:producao:
   extends: [.publicar-na-vm, .ambiente:producao]
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
-      when: manual
 
 # Seed do banco de produção (uma vez, botão): categorias base (Ciência,
 # Tecnologia, Inovação) + usuário admin. O e-mail/senha do admin vêm das
