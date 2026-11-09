@@ -58,10 +58,7 @@ publicar:producao:conectese:
     deployment_tier: production
     url: https://conectese.secitec.mt.gov.br/api
   rules:
-    # TEMPORÁRIO (commit da migração do env): manual para não publicar
-    # antes de a APP_ENV existir no escopo conectese-api-prod.
     - if: $CI_COMMIT_BRANCH == "main"
-      when: manual
   script:
     - |
       set -e
@@ -88,76 +85,3 @@ publicar:producao:conectese:
       docker exec conectese.backend.api sh -c 'env | cut -d= -f1' | sort -u | grep -E '^(DATABASE_URL|JWT_SECRET|POSTGRES_|PORT|NODE_ENV|EMAIL_|SMTP_)' || true
       curl -sk --max-time 15 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' 'https://conectese.secitec.mt.gov.br/api/eventos?limit=1'
 
-# MIGRAÇÃO PONTUAL do .env da VM do Conecte-se para a variável APP_ENV
-# (File, Protected, escopo conectese-api-prod). Roda manualmente, uma vez.
-# NUNCA imprime valores: só nomes de chaves, host/banco/usuário do DATABASE_URL
-# e o comprimento do JWT_SECRET. Faz backup do arquivo local antes de tudo.
-migrar:env:conectese:
-  stage: .pre
-  tags: [conectese-prod]
-  interruptible: false
-  timeout: 6m
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-      when: manual
-  environment:
-    name: conectese-api-prod
-    deployment_tier: production
-  script:
-    - |
-      set -e
-      ARQ=/home/gitlab-runner/conectese-api.env
-      echo "### backup do env atual"
-      test -f "$ARQ" || { echo "ERRO: $ARQ ausente"; exit 1; }
-      TS=$(date +%Y%m%d%H%M%S)
-      cp -p "$ARQ" "${ARQ}.bak.${TS}" && chmod 600 "${ARQ}.bak.${TS}"
-      echo "backup: ${ARQ}.bak.${TS}"
-      echo "### chaves atuais (apenas nomes)"
-      cut -d= -f1 "$ARQ" | sort -u | sed 's/^/  - /'
-      echo "### DATABASE_URL (sem senha)"
-      grep '^DATABASE_URL=' "$ARQ" | sed -E 's|^DATABASE_URL=postgres(ql)?://([^:]+):[^@]+@([^:/]+)(:[0-9]+)?/([^?]+).*|  host=\3 db-user=\2 db-name=\5|'
-      echo "### JWT_SECRET (apenas comprimento)"
-      awk -F= '/^JWT_SECRET=/{print "  length=" length($2)}' "$ARQ"
-      echo "### criando APP_ENV (File, Protected, escopo conectese-api-prod)"
-      code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
-        --header "PRIVATE-TOKEN: $MIGRATE_TOKEN" \
-        --data-urlencode "key=APP_ENV" \
-        --data-urlencode "value@$ARQ" \
-        --data-urlencode "variable_type=file" \
-        --data-urlencode "environment_scope=conectese-api-prod" \
-        --data-urlencode "protected=true" \
-        --data-urlencode "masked=false" \
-        "https://gitlab.risc.unemat.br/api/v4/projects/688/variables")
-      echo "HTTP create: $code"
-      if [ "$code" != "201" ]; then
-        code=$(curl -sS -o /dev/null -w '%{http_code}' -X PUT \
-          --header "PRIVATE-TOKEN: $MIGRATE_TOKEN" \
-          --data-urlencode "value@$ARQ" \
-          --data-urlencode "variable_type=file" \
-          --data-urlencode "protected=true" \
-          "https://gitlab.risc.unemat.br/api/v4/projects/688/variables/APP_ENV?filter%5Benvironment_scope%5D=conectese-api-prod")
-        echo "HTTP update: $code"
-        [ "$code" = "200" ] || { echo "ERRO: nao foi possivel criar/atualizar a variavel (HTTP $code)"; exit 1; }
-      fi
-      echo "### conferir variavel criada (hash + chaves, sem imprimir valores)"
-      curl -sS --header "PRIVATE-TOKEN: $MIGRATE_TOKEN" \
-        "https://gitlab.risc.unemat.br/api/v4/projects/688/variables/APP_ENV?filter%5Benvironment_scope%5D=conectese-api-prod" \
-        -o /tmp/appenv.json
-      chmod 600 /tmp/appenv.json
-      docker run --rm -v /tmp:/tmp -w /tmp "conectese-api:latest" node -e '
-        const fs=require("fs"),crypto=require("crypto");
-        const v=JSON.parse(fs.readFileSync("/tmp/appenv.json","utf8")).value;
-        fs.writeFileSync("/tmp/from_gitlab.env",v);
-        fs.chmodSync("/tmp/from_gitlab.env",0o600);
-        console.log(crypto.createHash("sha256").update(fs.readFileSync("/tmp/from_gitlab.env")).digest("hex"));
-      ' > /tmp/hash_gitlab
-      hash_a=$(sha256sum "$ARQ" | cut -d' ' -f1)
-      hash_b=$(cut -d' ' -f1 /tmp/hash_gitlab)
-      if [ "$hash_a" = "$hash_b" ]; then echo "hash match: OK"; else echo "hash MISMATCH"; fi
-      echo "chaves dentro da variavel:"
-      cut -d= -f1 /tmp/from_gitlab.env | sort -u | sed 's/^/  - /'
-      rm -f /tmp/from_gitlab.env /tmp/hash_gitlab /tmp/appenv.json
-      echo "### teste de conexao com o banco (usando o env local, mesmo conteudo)"
-      docker run --rm --network conectese-db-net --env-file "$ARQ" \
-        "conectese-api:latest" \
-        node -e 'const {PrismaClient}=require("@prisma/client");const p=new PrismaClient();p.$queryRawUnsafe("SELECT 1").then(()=>{console.log("DB OK");process.exit(0)}).catch(e=>{console.error("DB FAIL","code="+e.code);process.exit(1)}).finally(()=>p.$disconnect())'
