@@ -73,6 +73,8 @@ publicar:producao:conectese:
       echo "### marcando 5 e 6 como applied"
       docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate resolve --applied 20261014120000_adicionar_motivo_cancelamento_evento
       docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate resolve --applied 20261017010406_financiador_como_tabela
+      echo "### marcando 3 como applied (financiador_nome/tipo ja existiam)"
+      docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate resolve --applied 20261006212902_adicionar_financiador_evento
     - echo "### migrate deploy (deve dizer 'No pending migrations')"
     - docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate deploy
     - echo "### rebuild e subir"
