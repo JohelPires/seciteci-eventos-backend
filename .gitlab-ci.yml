@@ -71,9 +71,10 @@ publicar:producao:conectese:
       docker inspect conectese.backend.api -f '{{json .State}}'; echo
       echo "### LOGS (últimas 60)"
       docker logs --tail 60 conectese.backend.api 2>&1
-      echo "### MIGRATIONS na tabela _prisma_migrations"
-      docker exec conectese.db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "{\"financiador\",\"_prisma_migrations\"}" 2>/dev/null' 2>&1 | head -10
-      docker exec conectese.db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT migration_name, finished_at FROM _prisma_migrations ORDER BY migration_name;"' 2>&1 | head -20
+      echo "### Colunas de eventos e usuarios + tabela financiadores"
+      docker exec conectese.db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SELECT column_name FROM information_schema.columns WHERE table_name='\''eventos'\'' ORDER BY column_name;"' 2>&1
+      docker exec conectese.db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SELECT table_name FROM information_schema.tables WHERE table_schema='\''public'\'' AND table_name IN ('\''financiadores'\'');" 2>&1
+      docker exec conectese.db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SELECT column_name FROM information_schema.columns WHERE table_name='\''usuarios'\'' AND column_name LIKE '\''reset%'\'';"' 2>&1
       echo "### HTTP público"
       curl -sk --max-time 10 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' https://conectese.secitec.mt.gov.br/api/eventos
 
