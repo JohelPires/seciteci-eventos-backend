@@ -75,7 +75,7 @@ publicar:producao:conectese:
       docker run --rm --network conectese-db-net \
         --env-file /home/gitlab-runner/conectese-api.env \
         -e PORT=80 -e NODE_ENV=production \
-        "conectese-api:${CI_COMMIT_SHORT_SHA}" \
+        "conectese-api:latest" \
         npx prisma migrate deploy
       echo "### recriando o container da app"
       docker compose -p seciteci-eventos-backend \
