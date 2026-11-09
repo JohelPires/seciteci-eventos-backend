@@ -85,3 +85,34 @@ publicar:producao:conectese:
       docker exec conectese.backend.api sh -c 'env | cut -d= -f1' | sort -u | grep -E '^(DATABASE_URL|JWT_SECRET|POSTGRES_|PORT|NODE_ENV|EMAIL_|SMTP_)' || true
       curl -sk --max-time 15 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' 'https://conectese.secitec.mt.gov.br/api/eventos?limit=1'
 
+
+# DIAGNÓSTICO TEMPORÁRIO — contagens do banco do Conecte-se (read-only).
+diag:db:
+  stage: .pre
+  tags: [conectese-prod]
+  interruptible: true
+  timeout: 6m
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+  script:
+    - |
+      set +e
+      echo "### DB alvo (host/banco apenas)"
+      docker exec conectese.backend.api node -e 'const u=process.env.DATABASE_URL||"";const h=/@([^:\/?]+)/.exec(u);const d=/\/([^\/?]+)/.exec(u);console.log("host=",(h&&h[1]||"?"),"db=",(d&&d[1]||"?"))'
+      echo "### contagens e últimas linhas"
+      docker exec conectese.backend.api node -e '
+       const {PrismaClient}=require("@prisma/client");
+       const p=new PrismaClient();
+       (async()=>{
+         const ev=await p.$queryRawUnsafe("SELECT id,titulo,data_criacao FROM eventos ORDER BY id DESC LIMIT 5");
+         const cats=await p.$queryRawUnsafe("SELECT id,nome FROM categorias ORDER BY id");
+         const mg=await p.$queryRawUnsafe("SELECT migration_name FROM _prisma_migrations ORDER BY migration_name");
+         const users=await p.$queryRawUnsafe("SELECT id,email,tipo_usuario FROM usuarios ORDER BY id LIMIT 12");
+         console.log("EVENTOS "+JSON.stringify(ev));
+         console.log("CATEGORIAS "+JSON.stringify(cats));
+         console.log("MIGRATIONS "+JSON.stringify(mg));
+         console.log("USUARIOS "+JSON.stringify(users));
+         await p.$disconnect();
+       })().catch(e=>{console.error("ERR "+(e.code||e.message));process.exit(1)});
+      '
