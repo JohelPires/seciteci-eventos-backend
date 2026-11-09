@@ -65,19 +65,19 @@ publicar:producao:conectese:
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
-    - set +e
-    - echo "### _prisma_migrations"
-    - docker exec conectese.db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT migration_name, finished_at, logs IS NOT NULL AS espera_erro FROM _prisma_migrations ORDER BY migration_name;"'
-    - echo "### tabelas"
-    - docker exec conectese.db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\\dt"'
-    - echo "### eventos"
-    - docker exec conectese.db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\\d eventos"'
-    - echo "### usuarios"
-    - docker exec conectese.db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\\d usuarios"'
-    - echo "### financiadores"
-    - docker exec conectese.db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\\d financiadores"'
-    - echo "### prisma migrate status"
-    - docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env conectese-api:latest npx prisma migrate status
-    - echo "### diff schema (o que falta)"
-    - docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env conectese-api:latest npx prisma migrate diff --from-config-datasource --to-schema-datamodel prisma/schema.prisma
-
+    - set -e
+    - echo "### faithful migracao 6: DROP das colunas antigas de financiador (resto da migration)"
+    - printf 'ALTER TABLE eventos DROP COLUMN IF EXISTS financiador_nome, DROP COLUMN IF EXISTS financiador_tipo;\n' |
+      docker exec -i conectese.db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+    - echo "### marcando 5 e 6 como applied"
+    - docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate resolve --applied 20261014120000_adicionar_motivo_cancelamento_evento
+    - docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate resolve --applied 20261017010406_financiador_como_tabela
+    - echo "### migrate deploy (deve dizer 'No pending migrations')"
+    - docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate deploy
+    - echo "### rebuild e subir"
+    - DOCKER_BUILDKIT=1 docker build -f Dockerfile -t "conectese-api:${CI_COMMIT_SHORT_SHA}" -t "conectese-api:latest" .
+    - docker compose -p seciteci-eventos-backend -f deploy/conectese/compose.yml up -d --force-recreate --wait --wait-timeout 240
+    - echo "### sanity check"
+    - docker exec conectese.backend.api wget -qO- http://127.0.0.1:80/health; echo
+    - curl -sk --max-time 15 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' 'https://conectese.secitec.mt.gov.br/api/eventos?limit=1'
+    - curl -sk --max-time 15 'https://conectese.secitec.mt.gov.br/api/eventos?limit=2' | head -c 400 ; echo
