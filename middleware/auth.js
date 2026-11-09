@@ -18,12 +18,13 @@ const authMiddleware = async (req, res, next) => {
   try {
     const user = await prisma.usuario.findUnique({
       where: { id: decoded.id },
-      select: { tokenVersion: true },
+      select: { tokenVersion: true, ativo: true },
     });
 
     // Tokens antigos (pre-deploy) nao tem `v`; tratamos como 0 para nao
     // deslogar todo mundo de uma vez. Reset/troca incrementam tokenVersion.
-    if (!user || (decoded.v ?? 0) !== user.tokenVersion) {
+    // Usuario desativado (ativo=false) nao autentica, mesmo com token fresco.
+    if (!user || !user.ativo || (decoded.v ?? 0) !== user.tokenVersion) {
       return res.status(401).json({ error: "Token inválido ou expirado" });
     }
 

@@ -50,6 +50,16 @@ describe('middleware de autenticação', () => {
     expect(res.statusCode).toBe(401)
     expect(res.body.error).toBe('Token inválido ou expirado')
   })
+
+  test('token de usuário desativado (ativo=false) -> 401', async () => {
+    const user = await createUser({ ativo: false })
+    const res = await request(app)
+      .get('/api/auth/profile')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+
+    expect(res.statusCode).toBe(401)
+    expect(res.body.error).toBe('Token inválido ou expirado')
+  })
 })
 
 describe('rotas de admin', () => {
