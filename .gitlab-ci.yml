@@ -44,47 +44,55 @@ seed:producao:
   script:
     - docker compose -p conectese-api-prod -f /opt/apps/conectese-api/prod/compose.yml exec -T app npm run prisma:seed
 
-# DIAGNÓSTICO TEMPORÁRIO (read-only) no runner da VM que atende
-# conectese.secitec.mt.gov.br (.237), agora.runner de projeto do 688.
-# Descobrir: o que roda lá, onde está o compose/front/API, por que /api dá
-# 502 e como o backend deve ser publicado. Sem deploy.
-# Uma reversão restaura o arquivo original e remove este job.
-diagnostico:conectese:
-  stage: .pre
+# Publicação do BACKEND na VM do Conecte-se (runner `conectese-prod (.237)`,
+# projeto 688). Build da imagem, substituição do container
+# `conectese.backend.api` (mesmo nome/projeto/rede do compose de lá) e
+# verificação do /health. SEGREDOS: o .env do app é extraído do container
+# anterior pelo próprio job (não vai no repo nem no trace) e gravado como
+# 600 em /home/gitlab-runner/conectese-api.env.
+publicar:producao:conectese:
+  stage: deploy
   tags: [conectese-prod]
-  interruptible: true
-  timeout: 6m
+  interruptible: false
+  resource_group: conectese-api-237
+  environment:
+    name: producao
+    deployment_tier: production
+    url: https://conectese.secitec.mt.gov.br/api
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
     - |
-      set +e
-      echo "### HOST"; hostname; hostname -I
-      echo "### COMPOSES (estrutural)"
-      for f in /home/conectese/docker-compose.yml /home/conectese/seciteci-eventos-backend/docker-compose.yml /home/conectese/seciteci-eventos-db/docker-compose.yml; do
-        echo "--- $f"
-        grep -nE 'image|container_name|restart|TZ|POSTGRES_USER|POSTGRES_DB|networks|external: true|volumes|^ *- [^#]*:/|labels|traefik|rule|entrypoint|priority|port|ports|healthcheck|depends|stop_grace|mem_limit|command|environment' "$f" 2>/dev/null || echo "(sem acesso)"
-      done
-      echo "### TRAEFIK ESTATICO"
-      ls -la /etc/traefik 2>/dev/null
-      for f in /etc/traefik/*; do [ -f "$f" ] && { echo "--- $f"; cat "$f" 2>/dev/null; }; done
-      echo "### LABELS DO BACKEND (container)"
-      docker inspect conectese.backend.api -f '{{json .Config.Labels}}'
-      echo "### LABELS DO FRONT (referencia)"
-      docker inspect conectese.frontend -f '{{json .Config.Labels}}'
-      echo "### BACKEND (state/health/redes/env-keys/cmd/mounts)"
-      docker inspect conectese.backend.api -f 'imagem={{json .Config.Image}} | cmd={{json .Config.Cmd}}'
-      docker inspect conectese.backend.api -f '{{json .State}}'
-      docker inspect conectese.backend.api -f '{{json .Health}}'
-      docker inspect conectese.backend.api -f '{{json .NetworkSettings.Networks}}'
-      docker inspect conectese.backend.api -f '{{json .Mounts}}'
-      echo "### ENV KEYS (so os nomes)"
-      docker inspect conectese.backend.api -f '{{range .Config.Env}}{{println .}}{{end}}' | cut -d= -f1
-      echo "### REDES"
-      docker network inspect traefik -f '{{json .Containers}}' 2>/dev/null
-      docker network inspect conectese-db-net -f '{{json .Containers}}' 2>/dev/null
-      echo "### APLICACAO DENTRO DO CONTAINER"
-      docker exec conectese.backend.api sh -c 'command -v wget >/dev/null && wget -qO- http://127.0.0.1:80/health || (command -v curl >/dev/null && curl -s http://127.0.0.1:80/health)'; echo
-      echo "### HTTP EXTERNO"
-      curl -sk --max-time 10 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' https://conectese.secitec.mt.gov.br/api/eventos
-      curl -sk --max-time 10 -o /dev/null -w '/ HTTP %{http_code}\n' https://conectese.secitec.mt.gov.br/
+      set -e
+      NOME=conectese.backend.api
+      ARQ=/home/gitlab-runner/conectese-api.env
+      echo "== env do app =="
+      if docker inspect "$NOME" >/dev/null 2>&1; then
+        echo "container antigo existe: extraindo env (valores ficam NO RUNNER, nao no log)"
+        umask 077
+        {
+          docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$NOME" \
+            | grep -E '^(POSTGRES_USER|POSTGRES_PASSWORD|POSTGRES_HOST|POSTGRES_PORT|DATABASE_URL|JWT_SECRET|POSTGRES_DB|NODE_ENV)=' || true
+        } > "${ARQ}.tmp"
+        # PORT/NODE_ENV vêm do compose (Dockerfile: PORT=80)
+        sed -i '/^PORT=/d;/^NODE_ENV=/d' "${ARQ}.tmp"
+        mv "${ARQ}.tmp" "$ARQ"; chmod 600 "$ARQ"
+        echo "chaves reescritas:"; cut -d= -f1 "$ARQ" | sort -u | sed 's/^/  - /'
+      elif [ -f "$ARQ" ]; then
+        echo "container antigo ausente; reaproveitando $ARQ em disco"
+        chmod 600 "$ARQ"
+      else
+        echo "ERRO: nem container antigo nem $ARQ em disco. Precisamos do .env do app."; exit 1
+      fi
+      test -s "$ARQ" || { echo "ERRO: $ARQ vazio"; exit 1; }
+      echo "== build da imagem =="
+      DOCKER_BUILDKIT=1 docker build -f Dockerfile \
+        -t "conectese-api:${CI_COMMIT_SHORT_SHA}" -t "conectese-api:latest" .
+      echo "== subir (troca o container atual) =="
+      docker compose -p seciteci-eventos-backend \
+        -f deploy/conectese/compose.yml up -d --force-recreate --wait --wait-timeout 180
+      echo "== sanity check =="
+      sleep 3
+      docker exec "$NOME" wget -qO- http://127.0.0.1:80/health; echo
+      surface=$(curl -sk --max-time 15 -o /dev/null -w '%{http_code}' https://conectese.secitec.mt.gov.br/api/eventos?limit=1)
+      echo "HTTP publico /api/eventos: $surface"

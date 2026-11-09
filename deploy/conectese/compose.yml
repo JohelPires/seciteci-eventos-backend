@@ -1,0 +1,51 @@
+# Compose de PRODUÇÃO do backend, na VM do Conecte-se (SECITEC-29949).
+# O job `publicar:producao:conectese` copia seu conteúdo para o runner de lá.
+#
+# Coisas que já existem na VM (FORA DESTE COMPOSE, não mexemos):
+#   - `conectese.db`  — Postgres, projeto `seciteci-eventos-db`,
+#     volume `seciteci-eventos-backend_pgdata`, rede `conectese-db-net`;
+#   - rede Docker `traefik` — onde o Traefik (host) descobre os contrastes;
+#   - labels do frontend em outro projeto (`seciteci_eventos_front`).
+#
+# Este compose só MEDIA o container `conectese.backend.api` (projeto
+# `seciteci-eventos-backend`), que é o que o Traefik já roteia para
+# `https://conectese.secitec.mt.gov.br/api`.
+
+services:
+  backend:
+    image: conectese-api:${CI_COMMIT_SHORT_SHA}
+    container_name: conectese.backend.api
+    restart: unless-stopped
+    # .env extraído do container anterior pela pipeline (mesmo banco/JWT), em
+    # /home/gitlab-runner/conectese-api.env (600). PORT e NODE_ENV são fixados
+    # pelo `environment` abaixo para bater com o Dockerfile (porta 80).
+    env_file:
+      - /home/gitlab-runner/conectese-api.env
+    environment:
+      PORT: '80'
+      NODE_ENV: production
+    networks:
+      - conectese-db-net
+      - traefik
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik
+      # O caminho /api NÃO é retirado: a API expõe /api/* no Express.
+      - traefik.http.routers.conectese-backend.rule=Host(`conectese.secitec.mt.gov.br`) && PathPrefix(`/api`)
+      - traefik.http.routers.conectese-backend.entrypoints=websecure
+      - traefik.http.routers.conectese-backend.tls=true
+      - traefik.http.routers.conectese-backend.tls.certresolver=leresolver
+      - traefik.http.routers.conectese-backend.priority=100
+      - traefik.http.services.conectese-backend.loadbalancer.server.port=80
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:80/health >/dev/null || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  conectese-db-net:
+    external: true
+  traefik:
+    external: true
