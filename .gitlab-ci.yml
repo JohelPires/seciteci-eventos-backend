@@ -66,15 +66,26 @@ publicar:producao:conectese:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
     - |
-      set +e
-      echo "### STATE"
-      docker inspect conectese.backend.api -f '{{json .State}}'; echo
-      echo "### LOGS (últimas 60)"
-      docker logs --tail 60 conectese.backend.api 2>&1
-      echo "### Colunas de eventos e usuarios + tabela financiadores"
-      docker exec conectese.db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SELECT column_name FROM information_schema.columns WHERE table_name='\''eventos'\'' ORDER BY column_name;"' 2>&1
-      docker exec conectese.db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SELECT table_name FROM information_schema.tables WHERE table_schema='\''public'\'' AND table_name IN ('\''financiadores'\'');" 2>&1
-      docker exec conectese.db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SELECT column_name FROM information_schema.columns WHERE table_name='\''usuarios'\'' AND column_name LIKE '\''reset%'\'';"' 2>&1
-      echo "### HTTP público"
-      curl -sk --max-time 10 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' https://conectese.secitec.mt.gov.br/api/eventos
+      set -e
+      echo "### baseline incorreto: deletando rows das migrations 3..6 (que na verdade NAO foram aplicadas)"
+      docker exec -i conectese.db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' <<'SQL'
+DELETE FROM "_prisma_migrations"
+ WHERE migration_name IN (
+   '20261006212902_adicionar_financiador_evento',
+   '20261009145458_add_password_reset',
+   '20261014120000_adicionar_motivo_cancelamento_evento',
+   '20261017010406_financiador_como_tabela'
+ );
+SQL
+      echo "### aplicando as migrations reais"
+      docker run --rm --network conectese-db-net \
+        --env-file /home/gitlab-runner/conectese-api.env \
+        -e PORT=80 -e NODE_ENV=production \
+        "conectese-api:${CI_COMMIT_SHORT_SHA}" \
+        npx prisma migrate deploy
+      echo "### recriando o container da app"
+      docker compose -p seciteci-eventos-backend \
+        -f deploy/conectese/compose.yml up -d --force-recreate --wait --wait-timeout 240
+      echo "### teste final"
+      curl -sk --max-time 15 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' 'https://conectese.secitec.mt.gov.br/api/eventos?limit=1'
 
