@@ -70,9 +70,9 @@ publicar:producao:conectese:
       echo "### build da imagem"
       DOCKER_BUILDKIT=1 docker build -f Dockerfile \
         -t "conectese-api:${CI_COMMIT_SHORT_SHA}" -t "conectese-api:latest" .
-      echo "### baseline incorreto: deletando rows das migrations 3..6 (que na verdade NAO foram aplicadas)"
+      echo "### baseline: deletando rows das migrations 3, 5 e 6 (que na verdade NAO foram aplicadas)"
       printf "DELETE FROM _prisma_migrations WHERE migration_name IN (%s);\n" \
-        "'20261006212902_adicionar_financiador_evento','20261009145458_add_password_reset','20261014120000_adicionar_motivo_cancelamento_evento','20261017010406_financiador_como_tabela'" \
+        "'20261006212902_adicionar_financiador_evento','20261014120000_adicionar_motivo_cancelamento_evento','20261017010406_financiador_como_tabela'" \
         | docker exec -i conectese.db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
       echo "### aplicando as migrations reais"
       docker run --rm --network conectese-db-net \
