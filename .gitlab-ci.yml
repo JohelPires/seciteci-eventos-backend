@@ -74,6 +74,12 @@ publicar:producao:conectese:
       printf "DELETE FROM _prisma_migrations WHERE migration_name IN (%s);\n" \
         "'20261006212902_adicionar_financiador_evento','20261014120000_adicionar_motivo_cancelamento_evento','20261017010406_financiador_como_tabela'" \
         | docker exec -i conectese.db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+      echo "### marcando 4 como applied (resolve)"
+      docker run --rm --network conectese-db-net \
+        --env-file /home/gitlab-runner/conectese-api.env \
+        -e PORT=80 -e NODE_ENV=production \
+        "conectese-api:latest" \
+        npx prisma migrate resolve --applied 20261009145458_add_password_reset
       echo "### aplicando as migrations reais"
       docker run --rm --network conectese-db-net \
         --env-file /home/gitlab-runner/conectese-api.env \
