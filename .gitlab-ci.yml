@@ -44,13 +44,14 @@ seed:producao:
   script:
     - docker compose -p conectese-api-prod -f /opt/apps/conectese-api/prod/compose.yml exec -T app npm run prisma:seed
 
-# DIAGNÓSTICO TEMPORÁRIO (read-only) no runner `portal-prod` da VM do MTI:
-# descobrir como é a máquina que atende conectese.secitec.mt.gov.br (.237),
-# se o Conecte-se roda nela e se a .240 alcança a .237. Sem deploy.
+# DIAGNÓSTICO TEMPORÁRIO (read-only) no runner da VM que atende
+# conectese.secitec.mt.gov.br (.237), agora.runner de projeto do 688.
+# Descobrir: o que roda lá, onde está o compose/front/API, por que /api dá
+# 502 e como o backend deve ser publicado. Sem deploy.
 # Uma reversão restaura o arquivo original e remove este job.
-diagnostico:mti:
+diagnostico:conectese:
   stage: .pre
-  tags: [portal-prod]
+  tags: [conectese-prod]
   interruptible: true
   timeout: 6m
   rules:
@@ -61,15 +62,17 @@ diagnostico:mti:
       echo "### HOST"; hostname; hostname -I; uname -a; id; groups
       echo "### SUDO"; (sudo -n true && echo "sudo sem senha: SIM") || echo "sudo sem senha: NAO"
       echo "### REDE"; ip -4 addr; ip route
-      echo "### DOCKER"; docker info --format '{{.Name}} {{.ServerVersion}} {{.DockerRootDir}}'
-      docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}'
-      docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}' | grep -Ei 'conectese|evento|portal|next|api' || true
-      docker network ls
-      docker volume ls | grep -Ei 'conectese|evento|portal' || true
-      echo "### CONTAINERS CONECTE-SE"; for c in $(docker ps -a --format '{{.Names}}' | grep -Ei 'conectese|evento' || true); do docker inspect -f '{{.Name}} | imagem={{.Config.Image}} | redes={{json .NetworkSettings.Networks}} | labels={{json .Config.Labels}}' "$c"; done
-      echo "### PASTAS"; ls -ld /home/portal-inovacao /home/gitlab-runner; ls -la /home/portal-inovacao
-      echo "### ALCANCE .237"; for p in 22 80 443; do (timeout 3 bash -c "</dev/tcp/201.49.166.237/$p" && echo "porta $p: OK") || echo "porta $p: FALHOU"; done
-      echo "### HTTP .237"; curl -skI --max-time 10 https://conectese.secitec.mt.gov.br/ | head -20
+      echo "### DOCKER"; docker info --format '{{.Name}} {{.ServerVersion}} {{.DockerRootDir}}' 2>&1 | head -5
+      echo "### DOCKER PS"; docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.Status}}'
+      echo "### IMAGENS"; docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}' | head -60
+      echo "### REDES DOCKER"; docker network ls
+      echo "### VOLUMES DOCKER"; docker volume ls | head -60
+      echo "### LABELS DE PROJETO (cada container)"; for c in $(docker ps -aq 2>/dev/null); do docker inspect -f '{{.Name}} | projeto={{index .Config.Labels "com.docker.compose.project"}} | wd={{index .Config.Labels "com.docker.compose.project.working_dir"}} | cfg={{index .Config.Labels "com.docker.compose.project.config_files"}} | svc={{index .Config.Labels "com.docker.compose.service"}} | redes={{json .NetworkSettings.Networks}} | montagens={{json .Mounts}}' "$c"; done
+      echo "### COMPOSES"; find /home /opt /srv /var/www /etc /root -maxdepth 4 \( -iname 'compose*.y*ml' -o -iname 'docker-compose*.y*ml' \) 2>/dev/null
+      echo "### PASTAS RELEVANTES"; for d in /home /opt /srv /var/www; do ls -ld "$d" 2>/dev/null; for s in "$d"/*; do ls -ld "$s" 2>/dev/null; done; done
+      echo "### TRAEFIK"; docker ps --format '{{.Names}}' | grep -i traefik || true; ls -la /etc/traefik 2>/dev/null || true
+      echo "### HTTP LOCAL"; curl -skI --max-time 10 https://conectese.secitec.mt.gov.br/ 2>&1 | head -20
       curl -sk --max-time 10 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' https://conectese.secitec.mt.gov.br/api/eventos
       echo "### DNS"; getent hosts conectese.secitec.mt.gov.br portaldainovacao.secitec.mt.gov.br
-      echo "### DISCO/MEMORIA"; df -h /; free -h
+      echo "### PORTAS LOCAIS"; (ss -ltn 2>/dev/null || netstat -ltn 2>/dev/null) | head -30
+      echo "### DISCO/MEMORIA"; df -h; free -h
