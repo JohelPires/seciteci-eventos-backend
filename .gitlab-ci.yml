@@ -67,16 +67,13 @@ publicar:producao:conectese:
   script:
     - |
       set -e
-      echo "### faithful migracao 6: DROP das colunas antigas de financiador (resto da migration)"
-      printf 'ALTER TABLE eventos DROP COLUMN IF EXISTS financiador_nome, DROP COLUMN IF EXISTS financiador_tipo;\n' |
-        docker exec -i conectese.db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
-      echo "### marcando 5 e 6 como applied"
-      docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate resolve --applied 20261014120000_adicionar_motivo_cancelamento_evento
-      docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate resolve --applied 20261017010406_financiador_como_tabela
-      echo "### marcando 3 como applied (financiador_nome/tipo ja existiam)"
-      docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate resolve --applied 20261006212902_adicionar_financiador_evento
-    - echo "### migrate deploy (deve dizer 'No pending migrations')"
-    - docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate deploy
+      echo "### marcando migrations faltantes como applied (o estado fisico do banco ja contem 1..6)"
+      for n in 20261014120000_adicionar_motivo_cancelamento_evento 20261017010406_financiador_como_tabela 20261006212902_adicionar_financiador_evento; do
+        docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" \
+          npx prisma migrate resolve --applied "$n" 2>&1 | tail -n 3 || true
+      done
+      echo "### migrate deploy (deve dizer 'No pending migrations')"
+      docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate deploy
     - echo "### rebuild e subir"
     - DOCKER_BUILDKIT=1 docker build -f Dockerfile -t "conectese-api:${CI_COMMIT_SHORT_SHA}" -t "conectese-api:latest" .
     - docker compose -p seciteci-eventos-backend -f deploy/conectese/compose.yml up -d --force-recreate --wait --wait-timeout 240
