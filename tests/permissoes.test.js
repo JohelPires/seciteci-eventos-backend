@@ -146,3 +146,132 @@ describe('rotas de admin', () => {
     expect(decoded.tipo).toBe('admin')
   })
 })
+
+describe('DELETE /api/usuarios/:id (soft delete)', () => {
+  test('participante -> 403', async () => {
+    const user = await createUser()
+    const alvo = await createUser()
+    const res = await request(app)
+      .delete(`/api/usuarios/${alvo.id}`)
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+
+    expect(res.statusCode).toBe(403)
+    expect(res.body.error).toBe('Acesso negado. Apenas administradores.')
+  })
+
+  test('admin desativa participante -> 200, ativo=false e tokenVersion incrementada', async () => {
+    const admin = await createUser({ tipoUsuario: 'admin' })
+    const alvo = await createUser()
+
+    const res = await request(app)
+      .delete(`/api/usuarios/${alvo.id}`)
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+
+    expect(res.statusCode).toBe(200)
+    expect(res.body.message).toBe('Usuário desativado com sucesso')
+
+    const atualizado = await prisma.usuario.findUnique({ where: { id: alvo.id } })
+    expect(atualizado.ativo).toBe(false)
+    expect(atualizado.tokenVersion).toBe(alvo.tokenVersion + 1)
+  })
+
+  test('token já emitido fica inválido após desativação -> 401', async () => {
+    const admin = await createUser({ tipoUsuario: 'admin' })
+    const alvo = await createUser()
+    const tokenAlvo = tokenFor(alvo)
+
+    await request(app)
+      .delete(`/api/usuarios/${alvo.id}`)
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+
+    const res = await request(app)
+      .get('/api/auth/profile')
+      .set('Authorization', `Bearer ${tokenAlvo}`)
+
+    expect(res.statusCode).toBe(401)
+    expect(res.body.error).toBe('Token inválido ou expirado')
+  })
+
+  test('login de usuário desativado -> 401', async () => {
+    const admin = await createUser({ tipoUsuario: 'admin' })
+    const alvo = await createUser()
+
+    const deleted = await request(app)
+      .delete(`/api/usuarios/${alvo.id}`)
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+    expect(deleted.statusCode).toBe(200)
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: alvo.email, senha: alvo.senhaPlano })
+
+    expect(res.statusCode).toBe(401)
+    expect(res.body.error).toBe('Credenciais inválidas')
+  })
+
+  test('admin não desativa outro admin -> 403', async () => {
+    const admin = await createUser({ tipoUsuario: 'admin' })
+    const outroAdmin = await createUser({ tipoUsuario: 'admin' })
+
+    const res = await request(app)
+      .delete(`/api/usuarios/${outroAdmin.id}`)
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+
+    expect(res.statusCode).toBe(403)
+    expect(res.body.error).toBe('Acesso negado. Administradores não podem ser excluídos.')
+
+    const intacto = await prisma.usuario.findUnique({ where: { id: outroAdmin.id } })
+    expect(intacto.ativo).toBe(true)
+  })
+
+  test('admin não desativa a si mesmo -> 403', async () => {
+    const admin = await createUser({ tipoUsuario: 'admin' })
+
+    const res = await request(app)
+      .delete(`/api/usuarios/${admin.id}`)
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+
+    expect(res.statusCode).toBe(403)
+  })
+
+  test('inexistente -> 404', async () => {
+    const admin = await createUser({ tipoUsuario: 'admin' })
+
+    const res = await request(app)
+      .delete('/api/usuarios/999999')
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+
+    expect(res.statusCode).toBe(404)
+    expect(res.body.error).toBe('Usuário não encontrado')
+  })
+
+  test('id inválido -> 400', async () => {
+    const admin = await createUser({ tipoUsuario: 'admin' })
+
+    const res = await request(app)
+      .delete('/api/usuarios/abc')
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+
+    expect(res.statusCode).toBe(400)
+    expect(res.body.error).toBe('ID de usuário inválido')
+  })
+
+  test('segunda chamada é idempotente -> 200 e não reincrementa tokenVersion', async () => {
+    const admin = await createUser({ tipoUsuario: 'admin' })
+    const alvo = await createUser()
+
+    await request(app)
+      .delete(`/api/usuarios/${alvo.id}`)
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+
+    const segunda = await request(app)
+      .delete(`/api/usuarios/${alvo.id}`)
+      .set('Authorization', `Bearer ${tokenFor(admin)}`)
+
+    expect(segunda.statusCode).toBe(200)
+    expect(segunda.body.message).toBe('Usuário já está desativado')
+
+    const final = await prisma.usuario.findUnique({ where: { id: alvo.id } })
+    expect(final.tokenVersion).toBe(alvo.tokenVersion + 1)
+  })
+})

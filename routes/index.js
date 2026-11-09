@@ -44,6 +44,8 @@ router.patch('/auth/senha', authMiddleware, alterarSenhaValidator, authControlle
 
 router.get('/usuarios', authMiddleware, isAdmin, usuariosController.getUsuarios)
 
+router.delete('/usuarios/:id', authMiddleware, isAdmin, usuariosController.desativarUsuario)
+
 router.patch('/usuarios/:id/promover', authMiddleware, isAdmin, usuariosController.promoverUsuarioAdmin)
 
 // ===== ROTAS PROTEGIDAS - EVENTOS =====

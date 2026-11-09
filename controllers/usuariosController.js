@@ -118,7 +118,47 @@ const promoverUsuarioAdmin = async (req, res) => {
    }
 }
 
+const desativarUsuario = async (req, res) => {
+   try {
+      const id = parseInt(req.params.id, 10)
+
+      if (!Number.isInteger(id) || id < 1) {
+         return res.status(400).json({ error: 'ID de usuário inválido' })
+      }
+
+      const usuario = await prisma.usuario.findUnique({
+         where: { id },
+         select: { id: true, tipoUsuario: true, ativo: true },
+      })
+
+      if (!usuario) {
+         return res.status(404).json({ error: 'Usuário não encontrado' })
+      }
+
+      if (usuario.tipoUsuario === 'admin') {
+         return res.status(403).json({
+            error: 'Acesso negado. Administradores não podem ser excluídos.',
+         })
+      }
+
+      if (!usuario.ativo) {
+         return res.status(200).json({ message: 'Usuário já está desativado' })
+      }
+
+      await prisma.usuario.update({
+         where: { id },
+         data: { ativo: false, tokenVersion: { increment: 1 } },
+      })
+
+      res.status(200).json({ message: 'Usuário desativado com sucesso' })
+   } catch (error) {
+      console.error('Erro ao desativar usuário:', error)
+      res.status(500).json({ error: 'Erro ao desativar usuário' })
+   }
+}
+
 module.exports = {
    getUsuarios,
    promoverUsuarioAdmin,
+   desativarUsuario,
 }

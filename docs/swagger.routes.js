@@ -357,6 +357,38 @@
  *         description: Usuário não encontrado
  */
 
+/**
+ * @swagger
+ * /api/usuarios/{id}:
+ *   delete:
+ *     tags:
+ *       - Autenticação
+ *     summary: Desativar usuário (soft delete)
+ *     description: Define ativo=false e incrementa tokenVersion, invalidando os tokens JWT já emitidos do usuário. Administradores não podem ser desativados (inclui o próprio admin, pois ele também é admin). Chamada idempotente. Os dados pessoais e o histórico (inscrições, avaliações, eventos) permanecem no banco.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID do usuário a ser desativado
+ *     responses:
+ *       200:
+ *         description: Usuário desativado com sucesso, ou já estava desativado
+ *       400:
+ *         description: ID de usuário inválido
+ *       401:
+ *         description: Token não fornecido ou inválido
+ *       403:
+ *         description: Apenas administradores executam a rota; administradores não podem ser desativados
+ *       404:
+ *         description: Usuário não encontrado
+ *       500:
+ *         description: Erro interno
+ */
+
 // ============================================
 // EVENTOS
 // ============================================
