@@ -44,55 +44,34 @@ seed:producao:
   script:
     - docker compose -p conectese-api-prod -f /opt/apps/conectese-api/prod/compose.yml exec -T app npm run prisma:seed
 
-# Publicação do BACKEND na VM do Conecte-se (runner `conectese-prod (.237)`,
-# projeto 688). Build da imagem, substituição do container
-# `conectese.backend.api` (mesmo nome/projeto/rede do compose de lá) e
-# verificação do /health. SEGREDOS: o .env do app é extraído do container
-# anterior pelo próprio job (não vai no repo nem no trace) e gravado como
-# 600 em /home/gitlab-runner/conectese-api.env.
-publicar:producao:conectese:
-  stage: deploy
+# DIAGNÓSTICO TEMPORÁRIO (read-only) no runner da VM do Conecte-se após
+# esse deploy falhar no healthcheck: log, state, env keys, redes.
+diag:conectese:
+  stage: .pre
   tags: [conectese-prod]
-  interruptible: false
-  resource_group: conectese-api-237
-  environment:
-    name: producao
-    deployment_tier: production
-    url: https://conectese.secitec.mt.gov.br/api
+  interruptible: true
+  timeout: 6m
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
     - |
-      set -e
-      NOME=conectese.backend.api
-      ARQ=/home/gitlab-runner/conectese-api.env
-      echo "== env do app =="
-      if docker inspect "$NOME" >/dev/null 2>&1; then
-        echo "container antigo existe: extraindo env (valores ficam NO RUNNER, nao no log)"
-        umask 077
-        {
-          docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$NOME" \
-            | grep -E '^(POSTGRES_USER|POSTGRES_PASSWORD|POSTGRES_HOST|POSTGRES_PORT|DATABASE_URL|JWT_SECRET|POSTGRES_DB|NODE_ENV)=' || true
-        } > "${ARQ}.tmp"
-        # PORT/NODE_ENV vêm do compose (Dockerfile: PORT=80)
-        sed -i '/^PORT=/d;/^NODE_ENV=/d' "${ARQ}.tmp"
-        mv "${ARQ}.tmp" "$ARQ"; chmod 600 "$ARQ"
-        echo "chaves reescritas:"; cut -d= -f1 "$ARQ" | sort -u | sed 's/^/  - /'
-      elif [ -f "$ARQ" ]; then
-        echo "container antigo ausente; reaproveitando $ARQ em disco"
-        chmod 600 "$ARQ"
-      else
-        echo "ERRO: nem container antigo nem $ARQ em disco. Precisamos do .env do app."; exit 1
-      fi
-      test -s "$ARQ" || { echo "ERRO: $ARQ vazio"; exit 1; }
-      echo "== build da imagem =="
-      DOCKER_BUILDKIT=1 docker build -f Dockerfile \
-        -t "conectese-api:${CI_COMMIT_SHORT_SHA}" -t "conectese-api:latest" .
-      echo "== subir (troca o container atual) =="
-      docker compose -p seciteci-eventos-backend \
-        -f deploy/conectese/compose.yml up -d --force-recreate --wait --wait-timeout 180
-      echo "== sanity check =="
-      sleep 3
-      docker exec "$NOME" wget -qO- http://127.0.0.1:80/health; echo
-      surface=$(curl -sk --max-time 15 -o /dev/null -w '%{http_code}' https://conectese.secitec.mt.gov.br/api/eventos?limit=1)
-      echo "HTTP publico /api/eventos: $surface"
+      set +e
+      echo "### STATE do container"
+      docker inspect conectese.backend.api -f '{{json .State}}'; echo
+      echo "### HEALTHCHECK"
+      docker inspect conectese.backend.api -f '{{json .State.Health}}'; echo
+      echo "### CMD que foi executado"
+      docker inspect conectese.backend.api -f 'imagem={{json .Config.Image}} | cmd={{json .Config.Cmd}}' 2>/dev/null; echo
+      echo "### LOGS (últimas 40 linhas)"
+      docker logs --tail 40 conectese.backend.api 2>&1
+      echo "### ENV KEYS (apenas nomes)"
+      docker inspect conectese.backend.api -f '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null | cut -d= -f1 | sort | uniq
+      echo "### REDES"
+      docker inspect conectese.backend.api -f '{{json .NetworkSettings.Networks}}'; echo
+      echo "### HTTP público"
+      curl -sk --max-time 10 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' https://conectese.secitec.mt.gov.br/api/eventos
+      echo "### Cont dentro do container (80 e 3000)"
+      docker exec conectese.backend.api sh -c 'wget -qO- http://127.0.0.1:80/health || wget -qO- http://127.0.0.1:3000/health' 2>&1; echo
+      echo "### serviço pg from dentro"
+      docker exec conectese.backend.api sh -c 'getent hosts conectese.db 2>/dev/null || getent hosts postgres 2>/dev/null || nslookup conectese.db 2>/dev/null' 2>&1; echo
+
