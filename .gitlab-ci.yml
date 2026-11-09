@@ -1,14 +1,11 @@
-# Publicação automática na VM da SECITECI pelo modelo de CI do grupo
-# (fic_dev/secitec-servidor — README explica a convenção inteira).
-#
-# Fluxo: push/merge na `main` (protegida) → pipeline → `publicar:producao`
-# roda SEM botão → runner `secitec-vps` (shell, na VM) builda a imagem,
-# copia o compose.yml e escreve o /opt/apps/conectese-api/prod/.env, sobe
-# com `docker compose up -d --wait` e espera healthcheck /health.
-#
-# Pré-requisitos (uma vez): branch `main` protegida e a variável APP_ENV
-# (tipo File) no escopo `producao` — sem ela o job para com mensagem clara.
-# Endereço da API: https://apps.risc.unemat.br/dev/secitec/conectese-api
+# Fluxo:
+#   - push na branch `dev` (protegida) → `publicar:risc` publica AUTOMATICAMENTE
+#     na VM do RISC: https://apps.risc.unemat.br/dev/secitec/conectese-api
+#     (runner `secitec-vps`, shell, Protected só roda em refs protegidas);
+#   - push na `main` → `publicar:producao:conectese` publica AUTOMATICAMENTE
+#     na VM do Conecte-se: https://conectese.secitec.mt.gov.br/api
+# O botão manual `publicar:producao` do template continua disponível na
+# pipeline da `main` (publicação de emergência do RISC por commit).
 
 include:
   - project: 'fic_dev/secitec-servidor'
@@ -18,21 +15,24 @@ variables:
   # O <app> do endereço e das pastas /opt/apps/conectese-api/prod.
   APP: conectese-api
 
-# Deploy AUTOMÁTICO: o modelo deixa produção como manual (`when: manual`
-# em .ambiente:producao). Uma definição local de MESMO NOME sobrescreve a
-# do template — `extends` reaplica o corpo do job e as variáveis da
-# convenção (APP_CAMINHO, HOST_PUBLICO, COMPOSE_ARQUIVO, etc.), e a regra
-# local troca apenas o gatilho. resource_group do `.publicar-na-vm`
-# (conectese-api-prod) continua garantindo um deploy por vez.
-publicar:producao:
+# Deploy AUTOMÁTICO na VM do RISC: a branch `dev` é o ambiente de
+# homologação/integração. O corpo vem do modelo (.publicar-na-vm +
+# .ambiente:producao): mesmo endereço (sem sufixo -dev), mesma pasta
+# /opt/apps/conectese-api/prod e a APP_ENV de escopo `*`.
+# PRÉ-REQUISITO: branch `dev` protegida (runner é Protected).
+publicar:risc:
   extends: [.publicar-na-vm, .ambiente:producao]
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "dev"
+  environment:
+    name: risc
+    deployment_tier: staging
+    url: https://apps.risc.unemat.br/dev/secitec/conectese-api
 
-# Seed do banco de produção (uma vez, botão): categorias base (Ciência,
+# Seed do banco do RISC (uma vez, botão): categorias base (Ciência,
 # Tecnologia, Inovação) + usuário admin. O e-mail/senha do admin vêm das
 # variáveis ADMIN_EMAIL/ADMIN_PASSWORD — adicione-as à APP_ENV (File) no
-# GitLab. Depende do `publicar:producao` já ter rodado.
+# GitLab. Depende do `publicar:risc` já ter rodado.
 seed:producao:
   stage: deploy
   tags: [secitec-vps]
