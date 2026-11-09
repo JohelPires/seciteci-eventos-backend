@@ -65,13 +65,14 @@ publicar:producao:conectese:
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
   script:
-    - set -e
-    - echo "### faithful migracao 6: DROP das colunas antigas de financiador (resto da migration)"
-    - printf 'ALTER TABLE eventos DROP COLUMN IF EXISTS financiador_nome, DROP COLUMN IF EXISTS financiador_tipo;\n' |
-      docker exec -i conectese.db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
-    - echo "### marcando 5 e 6 como applied"
-    - docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate resolve --applied 20261014120000_adicionar_motivo_cancelamento_evento
-    - docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate resolve --applied 20261017010406_financiador_como_tabela
+    - |
+      set -e
+      echo "### faithful migracao 6: DROP das colunas antigas de financiador (resto da migration)"
+      printf 'ALTER TABLE eventos DROP COLUMN IF EXISTS financiador_nome, DROP COLUMN IF EXISTS financiador_tipo;\n' |
+        docker exec -i conectese.db sh -lc 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+      echo "### marcando 5 e 6 como applied"
+      docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate resolve --applied 20261014120000_adicionar_motivo_cancelamento_evento
+      docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate resolve --applied 20261017010406_financiador_como_tabela
     - echo "### migrate deploy (deve dizer 'No pending migrations')"
     - docker run --rm --network conectese-db-net --env-file /home/gitlab-runner/conectese-api.env "conectese-api:latest" npx prisma migrate deploy
     - echo "### rebuild e subir"
