@@ -15,13 +15,13 @@ async function createUser(overrides = {}) {
     dataNascimento = null,
     tipoUsuario = 'participante',
     ativo = true,
+    googleId = null,
   } = overrides
 
-  const senhaHash = await bcrypt.hash(senha, 10)
+  const data = { nome, email, telefone, cpf, dataNascimento, tipoUsuario, ativo, googleId }
+  data.senha = senha === null ? null : await bcrypt.hash(senha, 10)
 
-  const user = await prisma.usuario.create({
-    data: { nome, email, senha: senhaHash, telefone, cpf, dataNascimento, tipoUsuario, ativo },
-  })
+  const user = await prisma.usuario.create({ data })
 
   return { ...user, senhaPlano: senha }
 }

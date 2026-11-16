@@ -4,6 +4,7 @@ const crypto = require("crypto");
 const prisma = require("../config/prisma");
 const { sendMailSafe, isEmailEnabled } = require("../services/emailService");
 const { resetSenhaTemplate } = require("../services/emailTemplates/resetSenha");
+const { verifyGoogleIdToken } = require("../services/googleAuth");
 
 const CODIGO_TTL_MINUTOS = 15;
 const MAX_TENTATIVAS_RESET = 5;
@@ -69,7 +70,7 @@ const login = async (req, res) => {
       where: { email, ativo: true },
     });
 
-    if (!user) {
+    if (!user || !user.senha) {
       return res.status(401).json({ error: "Credenciais inválidas" });
     }
 
@@ -257,4 +258,97 @@ const redefinirSenha = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile, alterarSenha, esqueciSenha, redefinirSenha };
+const googleLogin = async (req, res) => {
+  try {
+    const { idToken } = req.body;
+
+    let payload;
+    try {
+      payload = await verifyGoogleIdToken(idToken);
+    } catch (error) {
+      console.error("Token do Google inválido:", error.message);
+      return res.status(401).json({ error: "Token do Google inválido" });
+    }
+
+    const {
+      sub,
+      email,
+      email_verified: emailVerified,
+      name,
+      picture,
+    } = payload;
+
+    if (!sub || !email || emailVerified !== true) {
+      return res.status(401).json({ error: "Token do Google inválido" });
+    }
+
+    const fotoGoogle = picture && picture.length <= 255 ? picture : null;
+
+    let user = await prisma.usuario.findUnique({ where: { googleId: sub } });
+
+    if (user) {
+      if (!user.ativo) {
+        return res.status(401).json({ error: "Credenciais inválidas" });
+      }
+      user = await prisma.usuario.update({
+        where: { id: user.id },
+        data: { ultimoAcesso: new Date() },
+      });
+    } else {
+      const porEmail = await prisma.usuario.findUnique({ where: { email } });
+
+      if (porEmail && porEmail.googleId && porEmail.googleId !== sub) {
+        return res
+          .status(409)
+          .json({ error: "Conta já vinculada a outro usuário Google" });
+      }
+
+      if (porEmail) {
+        if (!porEmail.ativo) {
+          return res.status(401).json({ error: "Credenciais inválidas" });
+        }
+        user = await prisma.usuario.update({
+          where: { id: porEmail.id },
+          data: {
+            googleId: sub,
+            ultimoAcesso: new Date(),
+            ...(porEmail.fotoPerfil ? {} : { fotoPerfil: fotoGoogle }),
+          },
+        });
+      } else {
+        user = await prisma.usuario.create({
+          data: {
+            nome: (name && name.trim()) || email.split("@")[0],
+            email,
+            senha: null,
+            googleId: sub,
+            fotoPerfil: fotoGoogle,
+            tipoUsuario: "participante",
+            ultimoAcesso: new Date(),
+          },
+        });
+      }
+    }
+
+    const token = jwt.sign(
+      { id: user.id, tipo: user.tipoUsuario, v: user.tokenVersion },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        tipoUsuario: user.tipoUsuario,
+      },
+    });
+  } catch (error) {
+    console.error("Erro no login com Google:", error);
+    res.status(500).json({ error: "Erro ao fazer login com Google" });
+  }
+};
+
+module.exports = { register, login, getProfile, alterarSenha, esqueciSenha, redefinirSenha, googleLogin };

@@ -27,6 +27,17 @@ const loginValidator = [
   validate,
 ];
 
+const googleLoginValidator = [
+  body("idToken")
+    .isString()
+    .withMessage("idToken é obrigatório")
+    .bail()
+    .trim()
+    .notEmpty()
+    .withMessage("idToken é obrigatório"),
+  validate,
+];
+
 const financiadoresValidator = [
   body("financiadores")
     .optional({ values: "falsy" })
@@ -120,6 +131,7 @@ const redefinirSenhaValidator = [
 module.exports = {
   registerValidator,
   loginValidator,
+  googleLoginValidator,
   eventoValidator,
   eventoUpdateValidator,
   inscricaoValidator,
