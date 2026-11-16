@@ -35,7 +35,7 @@ Erros:
 
 | Situação | Resposta |
 | --- | --- |
-| `idToken` ausente/inválido (formato) | `400 { error: 'idToken é obrigatório' }` |
+| `idToken` ausente/inválido (formato) | `400 { errors: [...] }` (convenção do `express-validator`) |
 | Token do Google inválido/expirado/audience errada | `401 { error: 'Token do Google inválido' }` |
 | E-mail não verificado no payload | `401 { error: 'Token do Google inválido' }` |
 | Conta desativada (`ativo=false`) | `401 { error: 'Credenciais inválidas' }` |
