@@ -327,7 +327,7 @@ const googleLogin = async (req, res) => {
       } else {
         user = await prisma.usuario.create({
           data: {
-            nome: (name && name.trim()) || email.split("@")[0],
+            nome: ((name && name.trim()) || email.split("@")[0]).slice(0, 100),
             email,
             senha: null,
             googleId: sub,

@@ -101,6 +101,22 @@ describe('POST /api/auth/google', () => {
     const user = await prisma.usuario.findUnique({ where: { id: local.id } })
     expect(user.googleId).toBe('google-sub-123')
     expect(user.senha).not.toBeNull()
+
+    const decoded = jwt.verify(res.body.token, process.env.JWT_SECRET)
+    expect(decoded.id).toBe(local.id)
+    expect(decoded.tipo).toBe('participante')
+    expect(decoded.v).toBe(user.tokenVersion)
+  })
+
+  test('fotoPerfil com picture maior que 255 fica nula', async () => {
+    mockOk(payloadGoogle({ picture: 'a'.repeat(256) }))
+    const res = await request(app)
+      .post('/api/auth/google')
+      .send({ idToken: 'token-lixo' })
+
+    expect(res.statusCode).toBe(200)
+    const user = await prisma.usuario.findUnique({ where: { email: 'google@teste.com' } })
+    expect(user.fotoPerfil).toBeNull()
   })
 
   test('segundo login pelo mesmo Google nao duplica usuario', async () => {
