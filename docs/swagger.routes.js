@@ -114,6 +114,40 @@
 
 /**
  * @swagger
+ * /api/auth/google:
+ *   post:
+ *     tags:
+ *       - Autenticação
+ *     summary: Fazer login com Google
+ *     description: |
+ *       Recebe o ID token do Google (Google Sign-In/One Tap), valida contra
+ *       GOOGLE_CLIENT_ID e retorna o JWT da API (7 dias). Contas locais com
+ *       o mesmo e-mail verificado são vinculadas automaticamente.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idToken
+ *             properties:
+ *               idToken:
+ *                 type: string
+ *                 example: eyJhbGciOiJSUzI1NiIsImtpZCI6...
+ *     responses:
+ *       200:
+ *         description: Login efetuado; retorna token e user
+ *       400:
+ *         description: idToken ausente
+ *       401:
+ *         description: Token do Google inválido ou conta desativada
+ *       409:
+ *         description: Conta já vinculada a outro usuário Google
+ */
+
+/**
+ * @swagger
  * /api/auth/profile:
  *   get:
  *     tags:
