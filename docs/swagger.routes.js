@@ -459,37 +459,37 @@
  *         schema:
  *           type: string
  *           enum: [presencial, online, hibrido]
-  *       - in: query
-  *         name: busca
-  *         schema:
-  *           type: string
-  *         description: Buscar por título, descrição, cidade ou nome do local
-  *       - in: query
-  *         name: proximos
-  *         schema:
-  *           type: boolean
-  *         description: "Quando true, retorna apenas eventos que terminam hoje ou depois (dataFim >= início de hoje no fuso do servidor)"
-  *       - in: query
-  *         name: ordem
-  *         schema:
-  *           type: string
-  *           enum: [asc, desc]
-  *           default: desc
-  *         description: "Direção da ordenação por data de início (padrão: mais recentes primeiro)"
-  *       - in: query
-  *         name: mes
-  *         schema:
-  *           type: integer
-  *           minimum: 1
-  *           maximum: 12
-  *         description: "Filtrar eventos cuja data de início está no mês (1=janeiro … 12=dezembro). Valores fora de 1-12 são ignorados."
-  *       - in: query
-  *         name: ano
-  *         schema:
-  *           type: integer
-  *         description: "Ano do filtro de mês; padrão é o ano corrente. Só tem efeito junto com mes."
-  *       - in: query
-  *         name: page
+ *       - in: query
+ *         name: busca
+ *         schema:
+ *           type: string
+ *         description: Buscar por título, descrição, cidade ou nome do local
+ *       - in: query
+ *         name: proximos
+ *         schema:
+ *           type: boolean
+ *         description: "Quando true, retorna apenas eventos que terminam hoje ou depois (dataFim >= início de hoje no fuso do servidor)"
+ *       - in: query
+ *         name: ordem
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *         description: "Direção da ordenação por data de início (padrão: mais recentes primeiro)"
+ *       - in: query
+ *         name: mes
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 12
+ *         description: "Filtrar eventos cuja data de início está no mês (1=janeiro … 12=dezembro). Valores fora de 1-12 são ignorados."
+ *       - in: query
+ *         name: ano
+ *         schema:
+ *           type: integer
+ *         description: "Ano do filtro de mês; padrão é o ano corrente. Só tem efeito junto com mes."
+ *       - in: query
+ *         name: page
  *         schema:
  *           type: integer
  *           default: 1
@@ -680,7 +680,7 @@
  *     tags:
  *       - Eventos
  *     summary: Atualizar evento
- *     description: Atualiza informações de um evento (dono do evento ou admin). Apenas administradores podem mudar o status para publicado; os demais ficam restritos a rascunho/cancelado/encerrado. Aceita "motivoCancelamento" (opcional, máx. 1000 caracteres), limpo automaticamente quando o evento deixa de estar cancelado. Aceita "financiadores" (lista de {nome, tipo}); enviar o array substitui todos os financiadores do evento, omitir a chave mantém os atuais. Campos que não são colunas do evento (ex.: objeto completo do GET com categoria/organizador/_count) são ignorados; categoriaId, datas, horários e números podem vir como string e são convertidos. Campos não reconhecidos retornam 400; em NODE_ENV=development a resposta de erro traz o campo detalhe com a mensagem crua.
+ *     description: 'Atualiza informações de um evento (dono do evento ou admin). Apenas administradores podem mudar o status para publicado; os demais ficam restritos a rascunho/cancelado/encerrado. Aceita "motivoCancelamento" (opcional, máx. 1000 caracteres), limpo automaticamente quando o evento deixa de estar cancelado. Aceita "financiadores" (lista de {nome, tipo}); enviar o array substitui todos os financiadores do evento, omitir a chave mantém os atuais. Campos que não são colunas do evento (ex.: objeto completo do GET com categoria/organizador/_count) são ignorados; categoriaId, datas, horários e números podem vir como string e são convertidos. Campos não reconhecidos retornam 400; em NODE_ENV=development a resposta de erro traz o campo detalhe com a mensagem crua.'
  *     security:
  *       - bearerAuth: []
  *     parameters:
