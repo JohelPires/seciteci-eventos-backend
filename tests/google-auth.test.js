@@ -159,3 +159,23 @@ describe('POST /api/auth/google', () => {
     expect(res.body.error).toBe('Credenciais inválidas')
   })
 })
+
+describe('conta Google nos fluxos de senha', () => {
+  test('PATCH /api/auth/senha em conta sem senha -> 400', async () => {
+    const user = await createUser({
+      email: 'google@teste.com',
+      googleId: 'google-sub-123',
+      senha: null,
+    })
+
+    const res = await request(app)
+      .patch('/api/auth/senha')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+      .send({ senhaAtual: 'x', novaSenha: 'nova123' })
+
+    expect(res.statusCode).toBe(400)
+    expect(res.body.error).toBe(
+      'Conta sem senha definida. Use a redefinição de senha ou o login Google.'
+    )
+  })
+})

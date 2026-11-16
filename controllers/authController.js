@@ -147,6 +147,15 @@ const alterarSenha = async (req, res) => {
       return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
+    if (!user.senha) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Conta sem senha definida. Use a redefinição de senha ou o login Google.",
+        });
+    }
+
     const validPassword = await bcrypt.compare(senhaAtual, user.senha);
 
     if (!validPassword) {
