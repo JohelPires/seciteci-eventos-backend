@@ -74,6 +74,13 @@ const verificarWebhook = async (req) => {
     signingSecret: process.env.CLERK_WEBHOOK_SIGNING_SECRET,
   });
 
+  // O id da entrega vem do header svix-id; evt.data.id e o id do usuario e
+  // se repete em eventos subsequentes do mesmo usuario (created/updated/
+  // deleted), o que quebraria a deduplicacao do webhook_eventos.
+  const svixId = req.headers["svix-id"];
+  const idEvento =
+    typeof svixId === "string" && svixId ? svixId : (evt.data.id ?? null);
+
   if (evt.type === "user.created" || evt.type === "user.updated") {
     const primario =
       evt.data.email_addresses.find(
@@ -84,7 +91,7 @@ const verificarWebhook = async (req) => {
         .trim()
         .slice(0, NOME_MAX) || null;
     return {
-      id: evt.data.id,
+      id: idEvento,
       tipo: evt.type === "user.created" ? "usuario.criado" : "usuario.atualizado",
       clerkUserId: evt.data.id,
       email: primario ? primario.email_address.toLowerCase() : null,
@@ -98,7 +105,7 @@ const verificarWebhook = async (req) => {
 
   if (evt.type === "user.deleted") {
     return {
-      id: evt.data.id ?? null,
+      id: idEvento,
       tipo: "usuario.removido",
       clerkUserId: evt.data.id ?? null,
       email: null,
@@ -108,7 +115,7 @@ const verificarWebhook = async (req) => {
   }
 
   return {
-    id: evt.data.id ?? null,
+    id: idEvento,
     tipo: "ignorado",
     clerkUserId: null,
     email: null,
