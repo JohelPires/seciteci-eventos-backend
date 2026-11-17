@@ -4,6 +4,8 @@ describe('infra de teste', () => {
   test('env do .env.test carregado', () => {
     expect(process.env.NODE_ENV).toBe('test')
     expect(process.env.JWT_SECRET).toBe('test-secret')
+    expect(process.env.CLERK_SECRET_KEY).toBe('sk_test_local')
+    expect(process.env.CLERK_WEBHOOK_SIGNING_SECRET).toBe('whsec_test_local')
     expect(process.env.EMAIL_ENABLED).toBe('false')
   })
 

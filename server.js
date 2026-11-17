@@ -1,4 +1,6 @@
 require('dotenv').config()
+const { validarEnv } = require('./config/env')
+validarEnv()
 const app = require('./app')
 const prisma = require('./config/prisma')
 const { verifyMailer } = require('./config/mailer')
