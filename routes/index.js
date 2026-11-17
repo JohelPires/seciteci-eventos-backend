@@ -11,8 +11,12 @@ const locaisController = require('../controllers/locaisController')
 const avaliacoesController = require('../controllers/avaliacoesController')
 const notificacoesController = require('../controllers/notificacoesController')
 const usuariosController = require('../controllers/usuariosController')
+const clerkWebhookController = require('../controllers/clerkWebhookController')
 
 // ===== ROTAS PÚBLICAS =====
+
+// Webhook do Clerk (assinado via svix, fora do rate limit)
+router.post('/webhooks/clerk', clerkWebhookController.receber)
 
 // Eventos públicos
 

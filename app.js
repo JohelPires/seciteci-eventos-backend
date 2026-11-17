@@ -24,11 +24,20 @@ app.set('trust proxy', 1)
 const limiter = rateLimit({
    windowMs: 3 * 60 * 1000,
    max: 100,
+   // Callbacks do Clerk não podem ser estrangulados pelo limite por IP.
+   skip: (req) => req.path === '/webhooks/clerk',
    message: 'Muitas requisições deste IP, tente novamente mais tarde.',
 })
 
 app.use(cors())
-app.use(express.json())
+app.use(express.json({
+   // rawBody para o webhook do Clerk (a verificação de assinatura usa o corpo cru).
+   verify: (req, res, buf) => {
+      if (req.originalUrl.split('?')[0] === '/api/webhooks/clerk') {
+         req.rawBody = buf
+      }
+   },
+}))
 app.use(express.urlencoded({ extended: true }))
 
 // Atrás do proxy por caminho (Traefik stripprefix), o redirect interno do
