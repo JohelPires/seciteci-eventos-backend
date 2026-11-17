@@ -64,7 +64,10 @@ eventos `user.created`, `user.updated`, `user.deleted`.
 
 Variáveis de ambiente (Clerk): `CLERK_SECRET_KEY`, `CLERK_JWT_KEY`,
 `CLERK_AUTHORIZED_PARTIES`, `CLERK_WEBHOOK_SIGNING_SECRET`. O seed usa apenas
-`ADMIN_EMAIL`.
+`ADMIN_EMAIL`. Com `NODE_ENV=production`, `AMBIENTE` (producao | homologacao |
+desenvolvimento; ausente = producao) escolhe as regras: produção exige
+`sk_live_`; homologação/desenvolvimento publicado exigem a `sk_test_` da
+instância de DESENVOLVIMENTO.
 
 ## Produção (VM Seciteci)
 
