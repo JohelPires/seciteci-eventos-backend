@@ -3,6 +3,9 @@ const jwt = require('jsonwebtoken')
 const app = require('../app')
 const { prisma, resetDb } = require('./db')
 const { createUser, tokenFor } = require('./factories')
+const clerkMock = require('./clerkMock')
+
+jest.mock('../services/clerkAuth', () => require('./clerkMock').mock)
 
 beforeEach(resetDb)
 
@@ -14,51 +17,98 @@ describe('middleware de autenticação', () => {
     expect(res.body.error).toBe('Token não fornecido')
   })
 
-  test('token malformado -> 401 "Token inválido ou expirado"', async () => {
+  test('token não reconhecido pelo adapter -> 401 "Token inválido ou expirado"', async () => {
     const res = await request(app)
       .get('/api/minhas-inscricoes')
-      .set('Authorization', 'Bearer nao.e.jwt')
+      .set('Authorization', 'Bearer lixo-qualquer')
 
     expect(res.statusCode).toBe(401)
     expect(res.body.error).toBe('Token inválido ou expirado')
   })
 
-  test('token assinado com segredo errado -> 401 (mesmo payload válido)', async () => {
+  test('token válido autentica pelo clerk_user_id', async () => {
     const user = await createUser()
-    const fake = jwt.sign({ id: user.id, tipo: user.tipoUsuario }, 'secret-errado')
-
     const res = await request(app)
-      .get('/api/minhas-inscricoes')
-      .set('Authorization', `Bearer ${fake}`)
+      .get('/api/auth/profile')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
 
-    expect(res.statusCode).toBe(401)
+    expect(res.statusCode).toBe(200)
+    expect(res.body.user.email).toBe(user.email)
   })
 
-  test('token com tokenVersion desatualizado -> 401', async () => {
-    const user = await createUser()
-    const token = tokenFor(user)
-
-    await prisma.usuario.update({
-      where: { id: user.id },
-      data: { tokenVersion: user.tokenVersion + 1 },
+  test('token válido sem conta ligada: fallback liga por e-mail', async () => {
+    const user = await createUser({ clerkUserId: null })
+    clerkMock.mock.__registry.set('clerk_fallback_1', {
+      email: user.email,
+      nome: user.nome,
+      foto: null,
     })
 
     const res = await request(app)
-      .get('/api/minhas-inscricoes')
-      .set('Authorization', `Bearer ${token}`)
+      .get('/api/auth/profile')
+      .set('Authorization', 'Bearer clerk-test:clerk_fallback_1')
+
+    expect(res.statusCode).toBe(200)
+    const row = await prisma.usuario.findUnique({ where: { id: user.id } })
+    expect(row.clerkUserId).toBe('clerk_fallback_1')
+  })
+
+  test('token válido sem conta: fallback cria participante', async () => {
+    clerkMock.mock.__registry.set('clerk_novo_1', {
+      email: 'novo@teste.com',
+      nome: 'Nova Pessoa',
+      foto: 'https://img.clerk.com/n.png',
+    })
+
+    const res = await request(app)
+      .get('/api/auth/profile')
+      .set('Authorization', 'Bearer clerk-test:clerk_novo_1')
+
+    expect(res.statusCode).toBe(200)
+    const row = await prisma.usuario.findUnique({ where: { email: 'novo@teste.com' } })
+    expect(row).toMatchObject({
+      tipoUsuario: 'participante',
+      clerkUserId: 'clerk_novo_1',
+      nome: 'Nova Pessoa',
+      fotoPerfil: 'https://img.clerk.com/n.png',
+    })
+  })
+
+  test('e-mail já ligado a outro clerkUserId -> 403 "Esta conta não tem acesso"', async () => {
+    const user = await createUser()
+    await prisma.usuario.update({
+      where: { id: user.id },
+      data: { clerkUserId: 'clerk_outro' },
+    })
+    // tokenFor continua com o clerkUserId da criação; a conta agora aponta para outro.
+    const res = await request(app)
+      .get('/api/auth/profile')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
+
+    expect(res.statusCode).toBe(403)
+    expect(res.body.error).toBe('Esta conta não tem acesso')
+  })
+
+  test('getUsuario sem e-mail (usuário sumiu do Clerk) -> 401', async () => {
+    const user = await createUser({ clerkUserId: null })
+    clerkMock.mock.__registry.set('clerk_sumiu_1', null)
+
+    const res = await request(app)
+      .get('/api/auth/profile')
+      .set('Authorization', 'Bearer clerk-test:clerk_sumiu_1')
 
     expect(res.statusCode).toBe(401)
     expect(res.body.error).toBe('Token inválido ou expirado')
   })
 
-  test('token de usuário desativado (ativo=false) -> 401', async () => {
+  test('conta desativada (ativo=false) -> 403 "Esta conta não tem acesso"', async () => {
     const user = await createUser({ ativo: false })
     const res = await request(app)
       .get('/api/auth/profile')
       .set('Authorization', `Bearer ${tokenFor(user)}`)
 
-    expect(res.statusCode).toBe(401)
-    expect(res.body.error).toBe('Token inválido ou expirado')
+    expect(res.statusCode).toBe(403)
+    expect(res.body.error).toBe('Esta conta não tem acesso')
   })
 })
 
@@ -175,7 +225,7 @@ describe('DELETE /api/usuarios/:id (soft delete)', () => {
     expect(atualizado.tokenVersion).toBe(alvo.tokenVersion + 1)
   })
 
-  test('token já emitido fica inválido após desativação -> 401', async () => {
+  test('token válido de conta desativada -> 403 "Esta conta não tem acesso"', async () => {
     const admin = await createUser({ tipoUsuario: 'admin' })
     const alvo = await createUser()
     const tokenAlvo = tokenFor(alvo)
@@ -188,8 +238,8 @@ describe('DELETE /api/usuarios/:id (soft delete)', () => {
       .get('/api/auth/profile')
       .set('Authorization', `Bearer ${tokenAlvo}`)
 
-    expect(res.statusCode).toBe(401)
-    expect(res.body.error).toBe('Token inválido ou expirado')
+    expect(res.statusCode).toBe(403)
+    expect(res.body.error).toBe('Esta conta não tem acesso')
   })
 
   test('login de usuário desativado -> 401', async () => {

@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
 const { prisma } = require('./db')
+const clerkMock = require('./clerkMock')
 
 let counter = 0
 
@@ -18,20 +18,23 @@ async function createUser(overrides = {}) {
     googleId = null,
   } = overrides
 
-  const data = { nome, email, telefone, cpf, dataNascimento, tipoUsuario, ativo, googleId }
+  const clerkUserId =
+    'clerkUserId' in overrides ? overrides.clerkUserId : `clerk_u_${counter}`
+
+  const data = { nome, email, telefone, cpf, dataNascimento, tipoUsuario, ativo, googleId, clerkUserId }
   data.senha = senha === null ? null : await bcrypt.hash(senha, 10)
 
   const user = await prisma.usuario.create({ data })
+
+  if (clerkUserId) {
+    clerkMock.mock.__registry.set(clerkUserId, { email, nome, foto: null })
+  }
 
   return { ...user, senhaPlano: senha }
 }
 
 function tokenFor(user) {
-  return jwt.sign(
-    { id: user.id, tipo: user.tipoUsuario, v: user.tokenVersion ?? 0 },
-    process.env.JWT_SECRET,
-    { expiresIn: '1d' }
-  )
+  return `clerk-test:${user.clerkUserId}`
 }
 
 const emUmDia = 24 * 60 * 60 * 1000

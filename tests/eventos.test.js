@@ -1,3 +1,5 @@
+jest.mock('../services/clerkAuth', () => require('./clerkMock').mock)
+
 const request = require('supertest')
 const app = require('../app')
 const { prisma, resetDb } = require('./db')

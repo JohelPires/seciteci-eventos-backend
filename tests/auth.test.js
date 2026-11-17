@@ -1,3 +1,5 @@
+jest.mock('../services/clerkAuth', () => require('./clerkMock').mock)
+
 const request = require('supertest')
 const app = require('../app')
 const { prisma, resetDb } = require('./db')
@@ -198,7 +200,7 @@ describe('PATCH /api/auth/senha', () => {
     expect(res.statusCode).toBe(401)
   })
 
-  test('retorna token novo que continua valido', async () => {
+  test('usuario continua autenticado apos a troca de senha', async () => {
     const user = await createUser({ email: 'novotoken@teste.com' })
 
     const res = await request(app)
@@ -211,22 +213,7 @@ describe('PATCH /api/auth/senha', () => {
 
     const perfil = await request(app)
       .get('/api/auth/profile')
-      .set('Authorization', `Bearer ${res.body.token}`)
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
     expect(perfil.statusCode).toBe(200)
-  })
-
-  test('token antigo eh invalidado apos a troca', async () => {
-    const user = await createUser({ email: 'antigoinvalido@teste.com' })
-    const tokenAntigo = tokenFor(user)
-
-    await request(app)
-      .patch('/api/auth/senha')
-      .set('Authorization', `Bearer ${tokenAntigo}`)
-      .send({ senhaAtual: user.senhaPlano, novaSenha: 'novaSenha456' })
-
-    const res = await request(app)
-      .get('/api/auth/profile')
-      .set('Authorization', `Bearer ${tokenAntigo}`)
-    expect(res.statusCode).toBe(401)
   })
 })
