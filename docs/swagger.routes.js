@@ -30,6 +30,33 @@
 
 /**
  * @swagger
+ * /api/webhooks/clerk:
+ *   post:
+ *     tags:
+ *       - Autenticação
+ *     summary: Webhook de sincronização de contas com o Clerk
+ *     description: |
+ *       Endpoint chamado pelo Clerk (configure no dashboard do Clerk com os
+ *       eventos `user.created`, `user.updated` e `user.deleted`). A
+ *       assinatura Svix é validada com `CLERK_WEBHOOK_SIGNING_SECRET`.
+ *       Cria/atualiza/desativa a conta local e liga `clerk_user_id`.
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Evento Svix do Clerk (type/data)
+ *     responses:
+ *       200:
+ *         description: Evento processado (ou ignorado como duplicado)
+ *       401:
+ *         description: Assinatura do webhook inválida
+ */
+
+/**
+ * @swagger
  * /api/auth/profile:
  *   get:
  *     tags:

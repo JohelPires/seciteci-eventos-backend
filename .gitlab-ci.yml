@@ -30,9 +30,10 @@ publicar:risc:
     url: https://apps.risc.unemat.br/dev/secitec/conectese-api
 
 # Seed do banco do RISC (uma vez, botão): categorias base (Ciência,
-# Tecnologia, Inovação) + usuário admin. O e-mail/senha do admin vêm das
-# variáveis ADMIN_EMAIL/ADMIN_PASSWORD — adicione-as à APP_ENV (File) no
-# GitLab. Depende do `publicar:risc` já ter rodado.
+# Tecnologia, Inovação) + conta do admin. O e-mail do admin vem da variável
+# ADMIN_EMAIL — adicione-a à APP_ENV (File) no GitLab. A conta é criada SEM
+# senha: para entrar, ligue-a via Clerk com o mesmo e-mail. Depende do
+# `publicar:risc` já ter rodado.
 seed:producao:
   stage: deploy
   tags: [secitec-vps]
@@ -82,6 +83,6 @@ publicar:producao:conectese:
       echo "### sanity check"
       docker exec conectese.backend.api wget -qO- http://127.0.0.1:80/health; echo
       echo "### chaves no container (nomes)"
-      docker exec conectese.backend.api sh -c 'env | cut -d= -f1' | sort -u | grep -E '^(DATABASE_URL|JWT_SECRET|POSTGRES_|PORT|NODE_ENV|EMAIL_|SMTP_)' || true
+      docker exec conectese.backend.api sh -c 'env | cut -d= -f1' | sort -u | grep -E '^(DATABASE_URL|CLERK_|POSTGRES_|PORT|NODE_ENV|EMAIL_|SMTP_)' || true
       curl -sk --max-time 15 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' 'https://conectese.secitec.mt.gov.br/api/eventos?limit=1'
 

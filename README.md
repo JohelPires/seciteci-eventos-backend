@@ -30,7 +30,8 @@ O servidor recarrega automaticamente a cada alteração de código (nodemon + bi
 docker compose -f docker-compose.yml exec app npm run prisma:seed
 # - NODE_ENV escolhe o seed: development roda o seed completo de dados de teste;
 #   production roda o seed enxuto (admin + categorias Ciência/Tecnologia/Inovação)
-# - e-mail/senha do admin vêm de ADMIN_EMAIL/ADMIN_PASSWORD (defaults de dev no docker-compose.yml)
+# - e-mail do admin vem de ADMIN_EMAIL (a conta é criada SEM senha; ligue-a via
+#   Clerk com o mesmo e-mail)
 # - rodar em banco recém-criado: o seed de desenvolvimento duplica eventos em DB povoado
 
 # parar (mantém os dados do banco)
@@ -50,6 +51,21 @@ As migrations são aplicadas automaticamente ao subir (`prisma migrate deploy`).
 Credenciais do Postgres local ficam definidas no `docker-compose.yml`; o `.env`
 local não é usado pelo ambiente Docker.
 
+## Autenticação (Clerk)
+
+Login pelo Clerk (padrão `fic_dev/padroes-servicos/clerk.md`): a API valida o
+session token (Bearer) e autoriza pela conta ligada por `clerk_user_id`; papel
+(`participante|organizador|admin`) e `ativo` são SEMPRE do banco. Participante
+entra por sign-up público; admin/organizador provisionados por e-mail
+(seed/convite no dashboard do Clerk).
+
+Webhook: configurar no dashboard do Clerk `POST https://<api>/api/webhooks/clerk`,
+eventos `user.created`, `user.updated`, `user.deleted`.
+
+Variáveis de ambiente (Clerk): `CLERK_SECRET_KEY`, `CLERK_JWT_KEY`,
+`CLERK_AUTHORIZED_PARTIES`, `CLERK_WEBHOOK_SIGNING_SECRET`. O seed usa apenas
+`ADMIN_EMAIL`.
+
 ## Produção (VM Seciteci)
 
 A API é publicada automaticamente a cada push na `main` pela convenção
@@ -66,5 +82,5 @@ nada secreto entra no repo. O banco (`sistema_eventos`, Postgres próprio do
 container. Rollback: re-executar a pipeline de um commit anterior.
 
 O seed de produção é um job manual (`seed:producao`) no GitLab, após o
-deploy: cria o admin (e-mail/senha de `ADMIN_EMAIL`/`ADMIN_PASSWORD` na
-`APP_ENV`) e as categorias Ciência, Tecnologia e Inovação.
+deploy: cria a conta do admin por `ADMIN_EMAIL` (sem senha — ligue-a via
+Clerk com o mesmo e-mail) e as categorias Ciência, Tecnologia e Inovação.
