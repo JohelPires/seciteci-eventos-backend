@@ -3,7 +3,6 @@
 const OBRIGATORIAS = [
   "CLERK_SECRET_KEY",
   "CLERK_WEBHOOK_SIGNING_SECRET",
-  "CLERK_AUTHORIZED_PARTIES",
 ];
 
 // QUAL ambiente publicado esta API é, com `NODE_ENV=production`
@@ -53,10 +52,11 @@ const validarEnv = () => {
     }
     if (origens().length === 0) {
       erros.push("CLERK_AUTHORIZED_PARTIES: obrigatória em produção (claim azp do token)");
-    }
-    for (const origem of origens()) {
-      if (!origem.startsWith("https://")) {
-        erros.push(`CLERK_AUTHORIZED_PARTIES: origem inválida "${origem}" (só https://)`);
+    } else {
+      for (const origem of origens()) {
+        if (!origem.startsWith("https://")) {
+          erros.push(`CLERK_AUTHORIZED_PARTIES: origem inválida "${origem}" (só https://)`);
+        }
       }
     }
   }

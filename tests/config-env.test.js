@@ -74,10 +74,21 @@ describe('config/env (validarEnv)', () => {
     expect(() => validarEnv()).not.toThrow()
   })
 
+  test('fora de producao, sem authorizedParties (azp off) e ok (dev local)', () => {
+    com({
+      NODE_ENV: 'development',
+      AMBIENTE: 'desenvolvimento',
+      CLERK_SECRET_KEY: 'sk_test_xxx',
+      CLERK_AUTHORIZED_PARTIES: '',
+    })
+    delete process.env.CLERK_AUTHORIZED_PARTIES
+    expect(() => validarEnv()).not.toThrow()
+  })
+
   test('faltam obrigatorias -> erro lista nomes', () => {
-    for (const k of ['CLERK_SECRET_KEY', 'CLERK_WEBHOOK_SIGNING_SECRET', 'CLERK_AUTHORIZED_PARTIES']) {
+    for (const k of ['CLERK_SECRET_KEY', 'CLERK_WEBHOOK_SIGNING_SECRET']) {
       delete process.env[k]
     }
-    expect(() => validarEnv()).toThrow(/CLERK_SECRET_KEY.*CLERK_WEBHOOK_SIGNING_SECRET.*CLERK_AUTHORIZED_PARTIES/s)
+    expect(() => validarEnv()).toThrow(/CLERK_SECRET_KEY.*CLERK_WEBHOOK_SIGNING_SECRET/s)
   })
 })
