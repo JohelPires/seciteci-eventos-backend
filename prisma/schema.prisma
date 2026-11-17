@@ -25,6 +25,7 @@ model Usuario {
   resetExpira     DateTime? @map("reset_expira") @db.Timestamp(6)
   resetTentativas Int       @default(0) @map("reset_tentativas")
   tokenVersion    Int       @default(0) @map("token_version")
+  clerkUserId     String?   @unique @map("clerk_user_id") @db.VarChar(255)
 
   eventosOrganizados Evento[]
   inscricoes         Inscricao[]
@@ -230,7 +231,15 @@ model Financiador {
    tipo     String? @db.VarChar(20)
    nome     String  @db.VarChar(150)
 
-   evento Evento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+    evento Evento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
 
-   @@map("financiadores")
+    @@map("financiadores")
+}
+
+model WebhookEvento {
+  id         String   @id @db.VarChar(255)
+  tipo       String   @db.VarChar(100)
+  recebidoEm DateTime @default(now()) @map("recebido_em") @db.Timestamp(6)
+
+  @@map("webhook_eventos")
 }
