@@ -1,5 +1,4 @@
 const { PrismaClient } = require('@prisma/client')
-const bcrypt = require('bcryptjs')
 
 const prisma = new PrismaClient()
 
@@ -7,9 +6,8 @@ async function main() {
    console.log('🌱 Iniciando seed do banco de dados...')
 
    const adminEmail = process.env.ADMIN_EMAIL
-   const adminPassword = process.env.ADMIN_PASSWORD
-   if (!adminEmail || !adminPassword) {
-      throw new Error('ADMIN_EMAIL e ADMIN_PASSWORD são obrigatórios no seed de desenvolvimento')
+   if (!adminEmail) {
+      throw new Error('ADMIN_EMAIL é obrigatório no seed de desenvolvimento')
    }
 
    // CATEGORIAS
@@ -28,13 +26,11 @@ async function main() {
 
    console.log('✅ Categorias criadas')
 
-   // Criar usuário admin (credenciais via ADMIN_EMAIL/ADMIN_PASSWORD)
-   const hashedPassword = await bcrypt.hash(adminPassword, 10)
+   // Criar usuário admin (e-mail via ADMIN_EMAIL; ligue a conta via Clerk)
    const admin = await prisma.usuario.create({
       data: {
          nome: 'Administrador',
          email: adminEmail,
-         senha: hashedPassword,
          tipoUsuario: 'admin',
       },
    })
@@ -46,7 +42,6 @@ async function main() {
       data: {
          nome: 'João Organizador',
          email: 'organizador@eventos.com',
-         senha: await bcrypt.hash('org123', 10),
          tipoUsuario: 'organizador',
          telefone: '(11) 98765-4321',
       },
@@ -59,7 +54,6 @@ async function main() {
       data: {
          nome: 'Maria Silva',
          email: 'maria@eventos.com',
-         senha: await bcrypt.hash('maria123', 10),
          tipoUsuario: 'organizador',
          telefone: '(65) 99876-5432',
       },
@@ -69,7 +63,6 @@ async function main() {
       data: {
          nome: 'Carlos Santos',
          email: 'carlos@eventos.com',
-         senha: await bcrypt.hash('carlos123', 10),
          tipoUsuario: 'organizador',
          telefone: '(65) 98765-1234',
       },

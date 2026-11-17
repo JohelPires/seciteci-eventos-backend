@@ -1,5 +1,4 @@
 const { PrismaClient } = require('@prisma/client')
-const bcrypt = require('bcryptjs')
 
 const prisma = new PrismaClient()
 
@@ -7,12 +6,10 @@ async function main() {
    console.log('🌱 Iniciando seed de produção...')
 
    const adminEmail = process.env.ADMIN_EMAIL
-   const adminPassword = process.env.ADMIN_PASSWORD
-   if (!adminEmail || !adminPassword) {
-      throw new Error('ADMIN_EMAIL e ADMIN_PASSWORD são obrigatórios no seed de produção')
+   if (!adminEmail) {
+      throw new Error('ADMIN_EMAIL é obrigatório no seed de produção')
    }
 
-   // CATEGORIAS
    const categorias = [
       { nome: 'Ciência', cor: 'bg-green-600' },
       { nome: 'Tecnologia', cor: 'bg-blue-600' },
@@ -26,20 +23,20 @@ async function main() {
 
    console.log('✅ Categorias criadas')
 
-   // Criar usuário admin (idempotente: upsert por e-mail)
-   const hashedPassword = await bcrypt.hash(adminPassword, 10)
+   // Conta do admin SEM senha: o Clerk é a identidade. Para entrar, o admin
+   // cria/aceita conta no Clerk com o MESMO e-mail e o webhook (ou o
+   // fallback) liga ao registro.
    await prisma.usuario.upsert({
       where: { email: adminEmail },
       create: {
          nome: 'Administrador',
          email: adminEmail,
-         senha: hashedPassword,
          tipoUsuario: 'admin',
       },
       update: {},
    })
 
-   console.log('✅ Usuário admin criado')
+   console.log('✅ Conta do admin criada (ligue-a via Clerk, com o mesmo e-mail)')
 
    console.log('🎉 Seed de produção concluído com sucesso!')
 }
