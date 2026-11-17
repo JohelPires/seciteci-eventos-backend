@@ -88,7 +88,7 @@ app.get('/', (req, res) => {
       version: '1.0.0',
       swagger: `${URL}/api-docs`,
       endpoints: {
-         auth: `${URL}/api/auth/register, ${URL}/api/auth/login`,
+         auth: `Clerk (frontend); ${URL}/api/auth/profile`,
          eventos: `${URL}/api/eventos`,
          inscricoes: `${URL}/api/inscricoes`,
          categorias: `${URL}/api/categorias`,

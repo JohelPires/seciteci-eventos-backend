@@ -29,7 +29,7 @@ const options = {
                type: 'http',
                scheme: 'bearer',
                bearerFormat: 'JWT',
-               description: 'Entre com o token JWT obtido no endpoint /api/auth/login',
+               description: 'Token de sessão do Clerk (Bearer). O frontend obtém via getToken() do Clerk e a API autoriza pela conta ligada ao clerk_user_id',
             },
          },
       },

@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { authMiddleware, isOrganizador, isAdmin } = require('../middleware/auth')
-const { registerValidator, loginValidator, googleLoginValidator, eventoValidator, eventoUpdateValidator, inscricaoValidator, alterarSenhaValidator, esqueciSenhaValidator, redefinirSenhaValidator } = require('../middleware/validators')
+const { financiadoresValidator, eventoValidator, eventoUpdateValidator, inscricaoValidator, atualizarProfileValidator } = require('../middleware/validators')
 
 const authController = require('../controllers/authController')
 const eventosController = require('../controllers/eventosController')
@@ -13,16 +13,6 @@ const notificacoesController = require('../controllers/notificacoesController')
 const usuariosController = require('../controllers/usuariosController')
 
 // ===== ROTAS PÚBLICAS =====
-
-router.post('/auth/register', registerValidator, authController.register)
-
-router.post('/auth/login', loginValidator, authController.login)
-
-router.post('/auth/google', googleLoginValidator, authController.googleLogin)
-
-router.post('/auth/esqueci-senha', esqueciSenhaValidator, authController.esqueciSenha)
-
-router.post('/auth/redefinir-senha', redefinirSenhaValidator, authController.redefinirSenha)
 
 // Eventos públicos
 
@@ -42,7 +32,7 @@ router.get('/eventos/:eventoId/avaliacoes', avaliacoesController.getAvaliacoesEv
 // ===== ROTAS PROTEGIDAS - USUÁRIOS =====
 router.get('/auth/profile', authMiddleware, authController.getProfile)
 
-router.patch('/auth/senha', authMiddleware, alterarSenhaValidator, authController.alterarSenha)
+router.patch('/auth/profile', authMiddleware, atualizarProfileValidator, authController.atualizarProfile)
 
 router.get('/usuarios', authMiddleware, isAdmin, usuariosController.getUsuarios)
 

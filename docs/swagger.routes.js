@@ -16,6 +16,8 @@
  *     description: Inscrições e participação em eventos
  *   - name: Categorias
  *     description: Categorias de eventos
+ *   - name: Locais
+ *     description: Locais de eventos
  *   - name: Avaliações
  *     description: Sistema de avaliações de eventos
  *   - name: Notificações
@@ -28,132 +30,12 @@
 
 /**
  * @swagger
- * /api/auth/register:
- *   post:
- *     tags:
- *       - Autenticação
- *     summary: Registrar novo usuário
- *     description: Cria uma nova conta de usuário no sistema
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - nome
- *               - email
- *               - senha
- *             properties:
- *               nome:
- *                 type: string
- *                 example: João Silva
- *               email:
- *                 type: string
- *                 format: email
- *                 example: joao@email.com
- *               senha:
- *                 type: string
- *                 format: password
- *                 minLength: 6
- *                 example: senha123
- *               telefone:
- *                 type: string
- *                 example: (11) 98765-4321
- *               cpf:
- *                 type: string
- *                 example: 123.456.789-00
- *               dataNascimento:
- *                 type: string
- *                 format: date
- *                 example: 1990-05-15
- *               tipoUsuario:
- *                 type: string
- *                 enum: [participante]
- *                 default: participante
- *                 description: O cadastro público cria sempre um participante. Promoção a admin é feita via /api/usuarios/{id}/promover.
- *     responses:
- *       201:
- *         description: Usuário cadastrado com sucesso (tipoUsuario sempre participante)
- *       400:
- *         description: Email ou CPF já cadastrado, ou tipoUsuario inválido
- */
-
-/**
- * @swagger
- * /api/auth/login:
- *   post:
- *     tags:
- *       - Autenticação
- *     summary: Fazer login
- *     description: Autentica usuário e retorna token JWT válido por 7 dias
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - senha
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: admin@eventos.com
- *               senha:
- *                 type: string
- *                 format: password
- *                 example: admin123
- *     responses:
- *       200:
- *         description: Login realizado com sucesso
- *       401:
- *         description: Credenciais inválidas
- */
-
-/**
- * @swagger
- * /api/auth/google:
- *   post:
- *     tags:
- *       - Autenticação
- *     summary: Fazer login com Google
- *     description: |
- *       Recebe o ID token do Google (Google Sign-In/One Tap), valida contra
- *       GOOGLE_CLIENT_ID e retorna o JWT da API (7 dias). Contas locais com
- *       o mesmo e-mail verificado são vinculadas automaticamente.
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - idToken
- *             properties:
- *               idToken:
- *                 type: string
- *                 example: eyJhbGciOiJSUzI1NiIsImtpZCI6...
- *     responses:
- *       200:
- *         description: Login efetuado; retorna token e user
- *       400:
- *         description: idToken ausente
- *       401:
- *         description: Token do Google inválido ou conta desativada
- *       409:
- *         description: Conta já vinculada a outro usuário Google
- */
-
-/**
- * @swagger
  * /api/auth/profile:
  *   get:
  *     tags:
  *       - Autenticação
  *     summary: Obter perfil do usuário
- *     description: Retorna informações completas do usuário autenticado
+ *     description: Retorna informações completas do usuário autenticado (conta ligada ao clerk_user_id) e atualiza o último acesso
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -161,16 +43,18 @@
  *         description: Perfil do usuário
  *       401:
  *         description: Token não fornecido ou inválido
- */
-
-/**
- * @swagger
- * /api/auth/senha:
+ *       403:
+ *         description: Esta conta não tem acesso (conta desativada ou e-mail ligado a outro clerk_user_id)
+ *       404:
+ *         description: Usuário não encontrado
  *   patch:
  *     tags:
  *       - Autenticação
- *     summary: Alterar senha do usuário autenticado
- *     description: Altera a senha do próprio usuário, exigindo a senha atual
+ *     summary: Atualizar perfil do usuário
+ *     description: |
+ *       Clerk é a identidade; este endpoint só completa/edita o perfil
+ *       (nome, telefone, cpf, dataNascimento, fotoPerfil). E-mail vem do Clerk.
+ *       Campos fora do schema (email, tipoUsuario, ativo) são rejeitados com 400.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -179,100 +63,37 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - senhaAtual
- *               - novaSenha
  *             properties:
- *               senhaAtual:
+ *               nome:
  *                 type: string
- *                 format: password
- *                 example: senha123
- *               novaSenha:
+ *                 maxLength: 100
+ *                 example: João Silva
+ *               telefone:
  *                 type: string
- *                 format: password
- *                 minLength: 6
- *                 example: novaSenha456
+ *                 maxLength: 20
+ *                 example: (65) 98765-4321
+ *               cpf:
+ *                 type: string
+ *                 maxLength: 14
+ *                 example: 12345678900
+ *               dataNascimento:
+ *                 type: string
+ *                 format: date-time
+ *                 example: 1990-05-15
+ *               fotoPerfil:
+ *                 type: string
+ *                 maxLength: 255
  *     responses:
  *       200:
- *         description: Senha alterada com sucesso
+ *         description: Perfil atualizado com sucesso; retorna message e user
  *       400:
- *         description: Dados inválidos (nova senha curta ou igual à atual)
+ *         description: Dados inválidos (validação ou CPF já cadastrado)
  *       401:
- *         description: Não autenticado ou senha atual incorreta
+ *         description: Token não fornecido ou inválido
+ *       403:
+ *         description: Esta conta não tem acesso
  *       404:
  *         description: Usuário não encontrado
- */
-
-/**
- * @swagger
- * /api/auth/esqueci-senha:
- *   post:
- *     tags:
- *       - Autenticação
- *     summary: Solicitar código de recuperação de senha
- *     description: >
- *       Envia um código numérico de 6 dígitos (válido por 15 minutos) caso o
- *       e-mail esteja cadastrado. A resposta é sempre genérica (HTTP 200) para
- *       não revelar quais e-mails existem.
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: usuario@email.com
- *     responses:
- *       200:
- *         description: Solicitação recebida (resposta genérica)
- *       400:
- *         description: E-mail inválido
- */
-
-/**
- * @swagger
- * /api/auth/redefinir-senha:
- *   post:
- *     tags:
- *       - Autenticação
- *     summary: Redefinir senha com código
- *     description: >
- *       Valida o código de 6 dígitos e define uma nova senha. Máximo de 5
- *       tentativas; ao exceder, o código é invalidado. A troca invalida os
- *       tokens JWT emitidos anteriormente.
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - codigo
- *               - novaSenha
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: usuario@email.com
- *               codigo:
- *                 type: string
- *                 example: "123456"
- *               novaSenha:
- *                 type: string
- *                 format: password
- *                 minLength: 6
- *                 example: novaSenha456
- *     responses:
- *       200:
- *         description: Senha redefinida com sucesso
- *       400:
- *         description: Dados inválidos ou código inválido/expirado
  */
 
 /**
@@ -368,7 +189,7 @@
  *     tags:
  *       - Autenticação
  *     summary: Promover usuário a administrador
- *     description: Define o tipo do usuário informado como admin. A mudança passa a valer a partir do próximo login do usuário, pois o tipo é embutido no token JWT.
+ *     description: 'Define o tipo do usuário informado como admin. A mudança tem efeito imediato: o papel é lido do banco a cada requisição (não há re-login).'
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -398,7 +219,7 @@
  *     tags:
  *       - Autenticação
  *     summary: Desativar usuário (soft delete)
- *     description: Define ativo=false e incrementa tokenVersion, invalidando os tokens JWT já emitidos do usuário. Administradores não podem ser desativados (inclui o próprio admin, pois ele também é admin). Chamada idempotente. Os dados pessoais e o histórico (inscrições, avaliações, eventos) permanecem no banco.
+ *     description: Define ativo=false; a conta desativada é barrada no middleware de autenticação. Administradores não podem ser desativados (inclui o próprio admin, pois ele também é admin). Chamada idempotente. Os dados pessoais e o histórico (inscrições, avaliações, eventos) permanecem no banco.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -1085,6 +906,98 @@
  *         description: Categoria não pode ser apagada
  *       403:
  *         description: Apenas administradores
+ */
+
+// ============================================
+// LOCAIS
+// ============================================
+
+/**
+ * @swagger
+ * /api/locais:
+ *   get:
+ *     tags:
+ *       - Locais
+ *     summary: Listar locais
+ *     description: Retorna os locais de eventos, com contagem de eventos de cada local. Permite filtro por cidade e estado.
+ *     parameters:
+ *       - in: query
+ *         name: cidade
+ *         schema:
+ *           type: string
+ *         description: Filtrar por cidade (correspondência exata)
+ *         example: Cuiabá
+ *       - in: query
+ *         name: estado
+ *         schema:
+ *           type: string
+ *         description: Filtrar por estado (correspondência exata)
+ *         example: MT
+ *     responses:
+ *       200:
+ *         description: Lista de locais com contagem de eventos
+ *   post:
+ *     tags:
+ *       - Locais
+ *     summary: Criar local
+ *     description: Cria um novo local de evento (apenas organizadores e admins)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nome
+ *               - endereco
+ *               - cidade
+ *               - estado
+ *             properties:
+ *               nome:
+ *                 type: string
+ *                 example: Centro de Eventos do Pantanal
+ *               endereco:
+ *                 type: string
+ *                 example: Av. Bernardo Antônio de Oliveira Neto
+ *               numero:
+ *                 type: string
+ *                 example: "500"
+ *               complemento:
+ *                 type: string
+ *               bairro:
+ *                 type: string
+ *               cidade:
+ *                 type: string
+ *                 example: Cuiabá
+ *               estado:
+ *                 type: string
+ *                 example: MT
+ *               cep:
+ *                 type: string
+ *                 example: 78049-900
+ *               pais:
+ *                 type: string
+ *                 default: Brasil
+ *               capacidade:
+ *                 type: integer
+ *                 example: 800
+ *               latitude:
+ *                 type: number
+ *                 format: double
+ *               longitude:
+ *                 type: number
+ *                 format: double
+ *               observacoes:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Local criado com sucesso
+ *       401:
+ *         description: Não autenticado
+ *       403:
+ *         description: Sem permissão (requer organizador ou admin)
  */
 
 // ============================================

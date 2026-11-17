@@ -147,7 +147,7 @@ const desativarUsuario = async (req, res) => {
 
       await prisma.usuario.update({
          where: { id },
-         data: { ativo: false, tokenVersion: { increment: 1 } },
+         data: { ativo: false },
       })
 
       res.status(200).json({ message: 'Usuário desativado com sucesso' })

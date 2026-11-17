@@ -8,36 +8,6 @@ const validate = (req, res, next) => {
   next();
 };
 
-const registerValidator = [
-  body("nome").trim().notEmpty().withMessage("Nome é obrigatório"),
-  body("email").isEmail().withMessage("Email inválido"),
-  body("senha")
-    .isLength({ min: 6 })
-    .withMessage("Senha deve ter no mínimo 6 caracteres"),
-  body("tipoUsuario")
-    .optional()
-    .equals("participante")
-    .withMessage("Tipo de usuário inválido no cadastro"),
-  validate,
-];
-
-const loginValidator = [
-  body("email").isEmail().withMessage("Email inválido"),
-  body("senha").notEmpty().withMessage("Senha é obrigatória"),
-  validate,
-];
-
-const googleLoginValidator = [
-  body("idToken")
-    .isString()
-    .withMessage("idToken é obrigatório")
-    .bail()
-    .trim()
-    .notEmpty()
-    .withMessage("idToken é obrigatório"),
-  validate,
-];
-
 const financiadoresValidator = [
   body("financiadores")
     .optional({ values: "falsy" })
@@ -96,46 +66,50 @@ const inscricaoValidator = [
   validate,
 ];
 
-const alterarSenhaValidator = [
-  body("senhaAtual").notEmpty().withMessage("Senha atual é obrigatória"),
-  body("novaSenha")
-    .isLength({ min: 6 })
-    .withMessage("Nova senha deve ter no mínimo 6 caracteres"),
-  body("novaSenha").custom((valor, { req }) =>
-    valor !== req.body.senhaAtual
-      ? true
-      : Promise.reject("Nova senha deve ser diferente da senha atual")
-  ),
-  validate,
-];
-
-const esqueciSenhaValidator = [
-  body("email").isEmail().withMessage("Email inválido"),
-  validate,
-];
-
-const redefinirSenhaValidator = [
-  body("email").isEmail().withMessage("Email inválido"),
-  body("codigo")
+const atualizarProfileValidator = [
+  body("nome")
+    .optional()
     .trim()
-    .isLength({ min: 6, max: 6 })
-    .withMessage("Código deve ter 6 dígitos")
-    .isNumeric()
-    .withMessage("Código inválido"),
-  body("novaSenha")
-    .isLength({ min: 6 })
-    .withMessage("Nova senha deve ter no mínimo 6 caracteres"),
+    .isLength({ min: 1, max: 100 })
+    .withMessage("Nome deve ter até 100 caracteres"),
+  body("telefone")
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 20 })
+    .withMessage("Telefone deve ter até 20 caracteres"),
+  body("cpf")
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 14 })
+    .withMessage("CPF deve ter até 14 caracteres"),
+  body("dataNascimento")
+    .optional({ nullable: true })
+    .isISO8601()
+    .withMessage("Data de nascimento inválida"),
+  body("fotoPerfil")
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 255 })
+    .withMessage("Foto deve ter até 255 caracteres"),
+  body("email")
+    .not()
+    .exists()
+    .withMessage("O e-mail é gerenciado pelo Clerk e não pode ser alterado aqui"),
+  body("tipoUsuario")
+    .not()
+    .exists()
+    .withMessage("tipoUsuario não pode ser alterado"),
+  body("ativo")
+    .not()
+    .exists()
+    .withMessage("ativo não pode ser alterado"),
   validate,
 ];
 
 module.exports = {
-  registerValidator,
-  loginValidator,
-  googleLoginValidator,
+  financiadoresValidator,
   eventoValidator,
   eventoUpdateValidator,
   inscricaoValidator,
-  alterarSenhaValidator,
-  esqueciSenhaValidator,
-  redefinirSenhaValidator,
+  atualizarProfileValidator,
 };

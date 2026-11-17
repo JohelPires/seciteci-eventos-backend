@@ -1,5 +1,4 @@
 const request = require('supertest')
-const jwt = require('jsonwebtoken')
 const app = require('../app')
 const { prisma, resetDb } = require('./db')
 const { createUser, tokenFor } = require('./factories')
@@ -175,25 +174,23 @@ describe('rotas de admin', () => {
     expect(invalido.body.pagination.limit).toBe(10)
   })
 
-  test('admin promove participante e login emite novo token admin', async () => {
+  test('promoção tem efeito imediato (papel vem do banco, sem re-login)', async () => {
     const admin = await createUser({ tipoUsuario: 'admin' })
-    const user = await createUser({ email: 'promover@teste.com' })
+    const user = await createUser()
 
     const res = await request(app)
       .patch(`/api/usuarios/${user.id}/promover`)
       .set('Authorization', `Bearer ${tokenFor(admin)}`)
 
     expect(res.statusCode).toBe(200)
-    expect(res.body.message).toBe('Usuário promovido a administrador')
     expect(res.body.user.tipoUsuario).toBe('admin')
 
-    const login = await request(app)
-      .post('/api/auth/login')
-      .send({ email: 'promover@teste.com', senha: user.senhaPlano })
+    const depois = await request(app)
+      .get('/api/auth/profile')
+      .set('Authorization', `Bearer ${tokenFor(user)}`)
 
-    expect(login.statusCode).toBe(200)
-    const decoded = jwt.verify(login.body.token, process.env.JWT_SECRET)
-    expect(decoded.tipo).toBe('admin')
+    expect(depois.statusCode).toBe(200)
+    expect(depois.body.user.tipoUsuario).toBe('admin')
   })
 })
 
@@ -209,7 +206,7 @@ describe('DELETE /api/usuarios/:id (soft delete)', () => {
     expect(res.body.error).toBe('Acesso negado. Apenas administradores.')
   })
 
-  test('admin desativa participante -> 200, ativo=false e tokenVersion incrementada', async () => {
+  test('admin desativa participante -> 200, ativo=false', async () => {
     const admin = await createUser({ tipoUsuario: 'admin' })
     const alvo = await createUser()
 
@@ -222,7 +219,6 @@ describe('DELETE /api/usuarios/:id (soft delete)', () => {
 
     const atualizado = await prisma.usuario.findUnique({ where: { id: alvo.id } })
     expect(atualizado.ativo).toBe(false)
-    expect(atualizado.tokenVersion).toBe(alvo.tokenVersion + 1)
   })
 
   test('token válido de conta desativada -> 403 "Esta conta não tem acesso"', async () => {
@@ -240,23 +236,6 @@ describe('DELETE /api/usuarios/:id (soft delete)', () => {
 
     expect(res.statusCode).toBe(403)
     expect(res.body.error).toBe('Esta conta não tem acesso')
-  })
-
-  test('login de usuário desativado -> 401', async () => {
-    const admin = await createUser({ tipoUsuario: 'admin' })
-    const alvo = await createUser()
-
-    const deleted = await request(app)
-      .delete(`/api/usuarios/${alvo.id}`)
-      .set('Authorization', `Bearer ${tokenFor(admin)}`)
-    expect(deleted.statusCode).toBe(200)
-
-    const res = await request(app)
-      .post('/api/auth/login')
-      .send({ email: alvo.email, senha: alvo.senhaPlano })
-
-    expect(res.statusCode).toBe(401)
-    expect(res.body.error).toBe('Credenciais inválidas')
   })
 
   test('admin não desativa outro admin -> 403', async () => {
@@ -306,7 +285,7 @@ describe('DELETE /api/usuarios/:id (soft delete)', () => {
     expect(res.body.error).toBe('ID de usuário inválido')
   })
 
-  test('segunda chamada é idempotente -> 200 e não reincrementa tokenVersion', async () => {
+  test('segunda chamada é idempotente -> 200 e ativo segue false', async () => {
     const admin = await createUser({ tipoUsuario: 'admin' })
     const alvo = await createUser()
 
@@ -322,6 +301,6 @@ describe('DELETE /api/usuarios/:id (soft delete)', () => {
     expect(segunda.body.message).toBe('Usuário já está desativado')
 
     const final = await prisma.usuario.findUnique({ where: { id: alvo.id } })
-    expect(final.tokenVersion).toBe(alvo.tokenVersion + 1)
+    expect(final.ativo).toBe(false)
   })
 })
