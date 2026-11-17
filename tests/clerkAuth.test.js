@@ -128,13 +128,46 @@ describe('services/clerkAuth', () => {
 
     const req = { headers: { 'svix-id': 'msg_1' }, rawBody: Buffer.from('{}') }
     await expect(adapter.verificarWebhook(req)).resolves.toEqual({
-      id: 'user_9',
+      id: 'msg_1',
       tipo: 'usuario.criado',
       clerkUserId: 'user_9',
       email: 'maria@teste.com',
       nome: 'Maria Silva',
       foto: 'https://img.clerk.com/m.png',
     })
+  })
+
+  test('id do evento vem do header svix-id (created/updated)', async () => {
+    verifyWebhook.mockResolvedValue({
+      type: 'user.updated',
+      data: { id: 'user_9', first_name: null, last_name: null, image_url: '', primary_email_address_id: 'idn_1', email_addresses: [{ id: 'idn_1', email_address: 'm@teste.com' }] },
+    })
+    const r = await adapter.verificarWebhook({ headers: { 'svix-id': 'msg_2' }, rawBody: Buffer.alloc(0) })
+    expect(r.id).toBe('msg_2')
+    expect(r.clerkUserId).toBe('user_9')
+  })
+
+  test('id do evento vem do header svix-id (deleted)', async () => {
+    verifyWebhook.mockResolvedValue({ type: 'user.deleted', data: { id: 'user_9', deleted: true } })
+    const r = await adapter.verificarWebhook({ headers: { 'svix-id': 'msg_3' }, rawBody: Buffer.alloc(0) })
+    expect(r.id).toBe('msg_3')
+    expect(r.clerkUserId).toBe('user_9')
+  })
+
+  test('id do evento vem do header svix-id (ignorado)', async () => {
+    verifyWebhook.mockResolvedValue({ type: 'session.created', data: { id: 'sess_1' } })
+    const r = await adapter.verificarWebhook({ headers: { 'svix-id': 'msg_4' }, rawBody: Buffer.alloc(0) })
+    expect(r.id).toBe('msg_4')
+    expect(r.tipo).toBe('ignorado')
+  })
+
+  test('sem header svix-id, id cai no data.id', async () => {
+    verifyWebhook.mockResolvedValue({
+      type: 'user.updated',
+      data: { id: 'user_9', first_name: null, last_name: null, image_url: '', primary_email_address_id: 'idn_1', email_addresses: [{ id: 'idn_1', email_address: 'm@teste.com' }] },
+    })
+    const r = await adapter.verificarWebhook({ headers: {}, rawBody: Buffer.alloc(0) })
+    expect(r.id).toBe('user_9')
   })
 
   test('webhook user.updated mapeia tipo', async () => {
