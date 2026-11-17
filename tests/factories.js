@@ -1,4 +1,3 @@
-const bcrypt = require('bcryptjs')
 const { prisma } = require('./db')
 const clerkMock = require('./clerkMock')
 
@@ -9,7 +8,6 @@ async function createUser(overrides = {}) {
   const {
     nome = `Usuario ${counter}`,
     email = `usuario${counter}@teste.com`,
-    senha = 'senha123',
     telefone = null,
     cpf = null,
     dataNascimento = null,
@@ -22,7 +20,6 @@ async function createUser(overrides = {}) {
     'clerkUserId' in overrides ? overrides.clerkUserId : `clerk_u_${counter}`
 
   const data = { nome, email, telefone, cpf, dataNascimento, tipoUsuario, ativo, googleId, clerkUserId }
-  data.senha = senha === null ? null : await bcrypt.hash(senha, 10)
 
   const user = await prisma.usuario.create({ data })
 
@@ -30,7 +27,7 @@ async function createUser(overrides = {}) {
     clerkMock.mock.__registry.set(clerkUserId, { email, nome, foto: null })
   }
 
-  return { ...user, senhaPlano: senha }
+  return user
 }
 
 function tokenFor(user) {
