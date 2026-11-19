@@ -23,7 +23,6 @@
     "express-rate-limit": "^7.1.5",
     "express-validator": "^7.0.1",
     "node-cache": "^5.1.2",
-    "nodemailer": "^10.0.15",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   },

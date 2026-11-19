@@ -69,6 +69,24 @@ desenvolvimento; ausente = producao) escolhe as regras: produção exige
 `sk_live_`; homologação/desenvolvimento publicado exigem a `sk_test_` da
 instância de DESENVOLVIMENTO.
 
+## E-mail (Plunk)
+
+Os e-mails transacionais (evento criado / status alterado) saem pela API do
+[Plunk](https://useplunk.com). A montagem do HTML continua no código, em
+`services/emailTemplates/`; o envio fica em `services/emailService.js`
+(`POST /v1/send`, `fetch` nativo).
+
+Variáveis: `EMAIL_ENABLED` (interruptor), `EMAIL_FROM` (precisa usar um domínio
+verificado no projeto do Plunk), `PLUNK_API_URL`
+(default `https://next-api.useplunk.com`) e `PLUNK_SECRET_KEY` (`sk_...`).
+Segredos só no `.env` local ou na variável `APP_ENV` do GitLab.
+
+Teste manual (Docker):
+
+```bash
+docker compose -f docker-compose.yml exec app npm run email:test -- destinatario@email.com
+```
+
 ## Produção (VM Seciteci)
 
 A API é publicada automaticamente a cada push na `main` pela convenção

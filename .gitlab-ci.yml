@@ -83,6 +83,6 @@ publicar:producao:conectese:
       echo "### sanity check"
       docker exec conectese.backend.api wget -qO- http://127.0.0.1:80/health; echo
       echo "### chaves no container (nomes)"
-      docker exec conectese.backend.api sh -c 'env | cut -d= -f1' | sort -u | grep -E '^(DATABASE_URL|CLERK_|POSTGRES_|PORT|NODE_ENV|EMAIL_|SMTP_)' || true
+      docker exec conectese.backend.api sh -c 'env | cut -d= -f1' | sort -u | grep -E '^(DATABASE_URL|CLERK_|POSTGRES_|PORT|NODE_ENV|EMAIL_|PLUNK_)' || true
       curl -sk --max-time 15 -o /dev/null -w '/api/eventos HTTP %{http_code}\n' 'https://conectese.secitec.mt.gov.br/api/eventos?limit=1'
 

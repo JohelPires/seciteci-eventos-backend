@@ -1,6 +1,6 @@
-const { transporter, emailEnabled } = require('../config/mailer')
+const { emailEnabled, plunkKey, plunkApiUrl, buildFrom } = require('../config/mailer')
 
-const isEmailEnabled = () => emailEnabled && transporter !== null
+const isEmailEnabled = () => emailEnabled && Boolean(plunkKey)
 
 const sendEmail = async ({ to, subject, html, text }) => {
    if (!isEmailEnabled()) {
@@ -11,15 +11,35 @@ const sendEmail = async ({ to, subject, html, text }) => {
       throw new Error('sendEmail: campos obrigatorios ausentes (to, subject)')
    }
 
-   const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.SMTP_USER,
-      to,
-      subject,
-      html,
-      text,
+   const body = html || text
+   if (!body) {
+      throw new Error('sendEmail: campos obrigatorios ausentes (html)')
+   }
+
+   const from = buildFrom()
+   if (!from) {
+      throw new Error('sendEmail: EMAIL_FROM nao configurado')
+   }
+
+   const response = await fetch(`${plunkApiUrl}/v1/send`, {
+      method: 'POST',
+      headers: {
+         Authorization: `Bearer ${plunkKey}`,
+         'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ to, subject, body, from }),
+      signal: AbortSignal.timeout(10000),
    })
 
-   return info.messageId
+   const payload = await response.json().catch(() => null)
+
+   if (!response.ok || !payload?.success) {
+      const code = payload?.error?.code || `HTTP_${response.status}`
+      const message = payload?.error?.message || response.statusText || 'falha no envio'
+      throw new Error(`[Plunk ${code}] ${message}`)
+   }
+
+   return payload?.data?.emails?.[0]?.email || null
 }
 
 const sendTemplatedEmail = async (to, template) => {

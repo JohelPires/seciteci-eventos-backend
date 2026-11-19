@@ -14,7 +14,7 @@ REST API for event registration (Seciteci). Node.js + Express + Prisma + Postgre
   Adding new deps requires the named volume refresh per the second bullet above.
 
 ## Tests / lint / typecheck
-No lint or typecheck exist. `teste.js` is scratch algorithm practice, not a test suite. Jest suites live in `tests/` (11 suites — sanity, app, auth, eventos, inscricoes, permissoes, clerkAuth, clerk-webhook, emailTemplates, swagger, deploy — 137 tests, run with `npx jest --runInBand`).
+No lint or typecheck exist. `teste.js` is scratch algorithm practice, not a test suite. Jest suites live in `tests/` (13 suites — sanity, app, auth, eventos, inscricoes, permissoes, clerkAuth, clerk-webhook, emailTemplates, emailService, config-env, swagger, deploy — 155 tests, run with `npx jest --runInBand`).
 
 ## Architecture
 - `routes/index.js` — single registration point for all routes; add route here, controller in `controllers/`, validation in `middleware/validators.js`.
@@ -26,7 +26,7 @@ No lint or typecheck exist. `teste.js` is scratch algorithm practice, not a test
 - Convenção `fic_dev/secitec-servidor` (readme do projeto 735): runner **`secitec-vps`** (shell, na VM, tag `secitec-vps`, **Protected** — só branches protegidas), template `gitlab/deploy.gitlab-ci.yml` incluído no `.gitlab-ci.yml`, URL pública `https://apps.risc.unemat.br/dev/secitec/conectese-api` (Traefik tira o prefixo antes da API).
 - **Push na `dev` (protegida) publica no RISC automaticamente** (`publicar:risc` — mesmo endereço/pasta `/opt/apps/conectese-api/prod`, APP_ENV de escopo `*`). Rollback: re-run da pipeline da `dev` de um commit anterior.
 - **Push na `main` (protegida) publica na VM do Conecte-se** (SECITEC-29949, `conectese.secitec.mt.gov.br`) pelo job `publicar:producao:conectese` (runner de projeto `conectese-prod`/id 119/tag `conectese-prod`, File no escopo `conectese-api-prod`): build na VM, troca do container `conectese.backend.api` via `deploy/conectese/compose.yml` (rede `conectese-db-net` + `traefik`, banco/container existentes preservados). Rollback: re-run da pipeline da `main` de um commit anterior (o compose usa `image: conectese-api:$CI_COMMIT_SHORT_SHA`).
-- Segredos do Conecte-se: variável **`APP_ENV` (File, Protected, escopo `conectese-api-prod`)** — DATABASE_URL/POSTGRES_* + AMBIENTE + CLERK_* + EMAIL_*/SMTP_* copiados do RISC. O job grava o conteúdo como 600 em `/home/gitlab-runner/conectese-api.env` (backups `.bak.*` mantidos pelo job). No RISC, a `APP_ENV` de escopo `*` leva `AMBIENTE=homologacao` (com `NODE_ENV=production`, aceita a chave `sk_test_` da instância Development; produção real exige `sk_live_` — ver `config/env.js`).
+- Segredos do Conecte-se: variável **`APP_ENV` (File, Protected, escopo `conectese-api-prod`)** — DATABASE_URL/POSTGRES_* + AMBIENTE + CLERK_* + EMAIL_*/PLUNK_* copiados do RISC. O job grava o conteúdo como 600 em `/home/gitlab-runner/conectese-api.env` (backups `.bak.*` mantidos pelo job). No RISC, a `APP_ENV` de escopo `*` leva `AMBIENTE=homologacao` (com `NODE_ENV=production`, aceita a chave `sk_test_` da instância Development; produção real exige `sk_live_` — ver `config/env.js`).
 - Seed de produção (RISC) segue manual (`seed:producao`) — cria a conta do admin por ADMIN_EMAIL (sem senha; ligar via Clerk com o mesmo e-mail); a VM do Conecte-se não tem job de seed (dados existentes).
 - Banco: Postgres **próprio** declarado no `compose.yml` (banco `sistema_eventos` criado pelo compose, senha via `APP_ENV`); **sem backup automático** (follow-up pendente). Migrations rodam no boot do container (`Dockerfile` CMD).
 - Rollback da migração `financiador como tabela`: ver `docs/rollback-financiadores-como-tabela.md` (SQL reverso manual; re-run da pipeline de commit anterior só volta a imagem, não o schema).
@@ -36,6 +36,7 @@ No lint or typecheck exist. `teste.js` is scratch algorithm practice, not a test
 - `eventosController` caches list/detail 24h via `node-cache` (keyed by query, flushes all on write; responses carry a `cache` flag). Stale reads possible after direct DB writes.
 - Prisma fields are camelCase mapped to snake_case via `@map`/`@@map`. `Evento` keeps denormalized `Local*` columns alongside legacy `local`/`Local` relations.
 - Rate limit: 100 req / 3 min per IP on `/api` (`app.js`). Times stored as `@db.Time` via `new Date('1970-01-01T...')`.
+- E-mail: `config/mailer.js` só lê a configuração do Plunk; `services/emailService.js` envia `POST /v1/send` com `fetch` nativo (sem nodemailer). `EMAIL_ENABLED` é o interruptor; `PLUNK_SECRET_KEY`/`PLUNK_API_URL`/`EMAIL_FROM` completam a config e o remetente precisa usar domínio verificado no painel. O Plunk ignora o `text` dos templates (gera a versão texto sozinho) e cria/atualiza o destinatário como contato.
 
 ## Gotchas
 

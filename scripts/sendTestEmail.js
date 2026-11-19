@@ -19,7 +19,7 @@ const main = async () => {
    })
 
    if (!messageId) {
-      console.error('Envio desativado: defina EMAIL_ENABLED=true e preencha SMTP_USER/SMTP_PASS no .env')
+      console.error('Envio desativado: defina EMAIL_ENABLED=true e preencha PLUNK_SECRET_KEY no .env')
       process.exit(1)
    }
 
